@@ -18,22 +18,28 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login','register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
 
-    public function register(Register $request){
-         $data =$request->validated();
-        // $data['password']=bcrypt($request->password); 
-         $user = User::create($data);
-  
+    public function register(Register $request)
+    {
+        try {
+            $data = $request->validated();
+            $user = User::create($data);
 
-       if (! $token = auth()->attempt(['email'=>$user->email,'password'=>$request->password] )) {
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    return $this->respondWithToken($token);
-
-
+            return response()->json([
+                'message' => 'Registration successful',
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
     /**
      * Get a JWT via given credentials. 
@@ -45,10 +51,22 @@ class AuthController extends Controller
         $credentials = request(['email', 'password']);
 
         if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['message' => 'Email or password is incorrect'], 401);
         }
 
-        return $this->respondWithToken($token);
+        $user = auth()->user();
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+        ]);
     }
 
     /**

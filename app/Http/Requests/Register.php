@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class Register extends FormRequest
 {
@@ -22,20 +24,33 @@ class Register extends FormRequest
     public function rules(): array
     {
         return [
-            'name'=>'required|string|max:190',
-            'email'=>'required|email|unique:users,email' ,
-            'password'=>'required|max:20|confirmed'                                                 
+            'name' => 'required|string|max:190',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6|max:20|confirmed|regex:/[A-Z]/|regex:/[0-9]/'
         ];
     }
     public function attributes()
     {
-        return[
-          'name'=>__('main.name'),
-          'email'=>__('main.email')  ,
-          'password'=>__('main.password')  ,
-          'password_confirmation'=>__('main.password_confirmation')  ,
-            
-        
+        return [
+            'name.required' => 'The name field is required.',
+            'email.required' => 'The email field is required.',
+            'email.email' => 'Please provide a valid email address.',
+            'email.unique' => 'This email is already registered.',
+            'password.required' => 'The password field is required.',
+            'password.min' => 'The password must be at least 6 characters.',
+            'password.regex' => 'The password must contain at least one uppercase letter and one number.',
+            'password.confirmed' => 'Password confirmation does not match.',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        $errors = $validator->errors();
+
+        $errorMessages = $errors->all();
+
+        throw new HttpResponseException(response()->json([
+            'message' => $errorMessages[0],  
+        ], 422));
     }
 }
