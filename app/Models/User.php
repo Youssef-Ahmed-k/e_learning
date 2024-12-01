@@ -22,7 +22,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
-  
+
     ];
 
     /**
@@ -46,7 +46,6 @@ class User extends Authenticatable implements JWTSubject
     public function setPasswordAttribute($password)
     {
         $this->attributes['password'] = bcrypt($password);
-        
     }
     public function getJWTIdentifier()
     {
@@ -58,4 +57,43 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    public function courses()
+    {
+        return $this->hasMany(Course::class, 'ProfessorID', 'id');
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(Material::class, 'ProfessorID', 'id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'RecipientID', 'id');
+    }
+
+    public function studentAnswers()
+    {
+        return $this->hasMany(StudentAnswer::class, 'StudentID', 'id');
+    }
+
+    public function quizResults()
+    {
+        return $this->hasMany(QuizResult::class, 'StudentID', 'id');
+    }
+
+    public function courseRegistrations()
+    {
+        return $this->hasMany(CourseRegistration::class, 'StudentID', 'id');
+    }
+
+    public function suspensions()
+    {
+        return $this->hasMany(Suspension::class, 'StudentID', 'id');
+    }
+
+    public function cheatingLogs()
+    {
+        return $this->hasMany(CheatingLog::class, 'StudentID', 'id');
+    }
 }
