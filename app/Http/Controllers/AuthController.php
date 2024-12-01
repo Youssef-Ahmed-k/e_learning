@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Register;
-
+use App\Http\Requests\UpdatePassword;
+use App\Http\Requests\UpdateProfile;
 use App\Models\User;
-
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -113,7 +114,50 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'expires_in' => auth()->factory()->getTTL() * 99999
+        ]);
+    }
+
+    public function updateProfile(UpdateProfile $request)
+    {
+        $user = auth()->user();
+
+        $user->update($request->only(['name', 'email', 'phone', 'address']));
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user
+        ]);
+    }
+
+    public function getAllUsers()
+    {
+        $user = auth()->user();
+
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $users = User::paginate(10);
+
+        return response()->json([
+            'users' => $users
+        ]);
+    }
+
+    public function updatePassword(UpdatePassword $request)
+    {
+        $user = auth()->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect'], 401);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password updated successfully. Please log in again.'
         ]);
     }
 }
