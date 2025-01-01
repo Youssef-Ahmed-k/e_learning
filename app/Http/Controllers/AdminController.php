@@ -34,4 +34,22 @@ class AdminController extends Controller
             ]
         ]);
     }
+
+    public function getAllStudents()
+    {
+        $students = User::where('role', 'user')->paginate(10);
+
+        return response()->json([
+            'students' => $students
+        ]);
+    }
+
+    public function getAllProfessors()
+    {
+        $professors = User::where('role', 'professor')->paginate(10);
+
+        return response()->json([
+            'professors' => $professors
+        ]);
+    }
 }

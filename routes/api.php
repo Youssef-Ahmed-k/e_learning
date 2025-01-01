@@ -40,4 +40,6 @@ Route::group([
 ], function ($router) {
     Route::get('allUsers',  [AuthController::class,'getAllUsers'])->middleware('role:admin');
     Route::post('assignRole', [AdminController::class, 'assignRole']);
+    Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
+    Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
 });
