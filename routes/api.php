@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,9 +30,14 @@ Route::group([
     Route::post('me',  [AuthController::class,'me']);
     Route::post('updateProfile',  [AuthController::class,'updateProfile']);
     Route::post('updatePassword',  [AuthController::class,'updatePassword']);
-    Route::get('allUsers',  [AuthController::class,'getAllUsers'])->middleware('role:admin');
 });
 
-Route::get('/dashboard', function () {
-    return 'Welcome to the dashboard';
-})->middleware('role:user');
+Route::group([
+
+    'middleware' => 'api',
+    'prefix' => 'admin'
+
+], function ($router) {
+    Route::get('allUsers',  [AuthController::class,'getAllUsers'])->middleware('role:admin');
+    Route::post('assignRole', [AdminController::class, 'assignRole']);
+});
