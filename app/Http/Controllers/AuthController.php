@@ -134,10 +134,6 @@ class AuthController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
         $users = User::paginate(10);
 
         return response()->json([
