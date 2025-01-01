@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Course;
 
 class AdminController extends Controller
 {
@@ -50,6 +51,65 @@ class AdminController extends Controller
 
         return response()->json([
             'professors' => $professors
+        ]);
+    }
+
+    public function createCourse(Request $request)
+    {
+        $request->validate([
+            'CourseName' => 'required|string|max:255',
+        ]);
+
+        $course = Course::create([
+            'CourseName' => $request->CourseName,
+        ]);
+
+        return response()->json([
+            'message' => 'Course created successfully',
+            'course' => $course
+        ]);
+    }
+
+    public function getAllCourses()
+    {
+        $courses = Course::paginate(10);
+
+        return response()->json([
+            'courses' => $courses
+        ]);
+    }
+
+    public function assignCourseToProfessor(Request $request)
+    {
+        $request->validate([
+            'CourseID' => 'required|exists:courses,CourseID',
+            'ProfessorID' => 'required|exists:users,id',
+        ]);
+
+        // Ensure the professor exists and is of the correct role
+        $professor = User::where('id', $request->ProfessorID)->where('role', 'professor')->first();
+
+
+        if (!$professor) {
+            return response()->json([
+                'message' => 'The selected user is not a professor'
+            ], 404);
+        }
+
+        $course = Course::find($request->CourseID);
+
+        if (!$course) {
+            return response()->json([
+                'message' => 'Course not found'
+            ], 404);
+        }
+        
+        $course->ProfessorID = $professor->id;
+        $course->save();
+
+        return response()->json([
+            'message' => 'Course assigned successfully',
+            'course' => $course
         ]);
     }
 }

@@ -42,4 +42,7 @@ Route::group([
     Route::post('assignRole', [AdminController::class, 'assignRole']);
     Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
     Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
+    Route::post('createCourse', [AdminController::class, 'createCourse']);
+    Route::get('getAllCourses', [AdminController::class, 'getAllCourses']);
+    Route::post('assignCourseToProfessor', [AdminController::class, 'assignCourseToProfessor']);
 });
