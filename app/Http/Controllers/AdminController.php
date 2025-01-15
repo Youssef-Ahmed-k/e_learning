@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Register;
+use App\Http\Requests\UpdateProfile;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Course;
@@ -16,7 +17,7 @@ class AdminController extends Controller
     }
 
   
-public function createAccount(Register $request)
+public function createUserAccount(Register $request)
 {
     try {
         $data = $request->validated();
@@ -37,7 +38,7 @@ public function createAccount(Register $request)
     }
 }
 
-public function deleteAccount(Request $request)
+public function deleteUserAccount(Request $request)
 {
     $request->validate([
         'user_id' => 'required|exists:users,id',
@@ -49,6 +50,42 @@ public function deleteAccount(Request $request)
 
         return response()->json([
             'message' => 'Account deleted successfully',
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function updateUserAccount(UpdateProfile $request)
+{
+    try {
+        $user = User::findOrFail($request->user_id);
+
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+        $user->save();
+
+        return response()->json([
+            'message' => 'Account updated successfully',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+            ]
         ], 200);
     } catch (\Exception $e) {
         return response()->json([
