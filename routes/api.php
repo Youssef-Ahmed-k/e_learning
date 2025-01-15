@@ -45,5 +45,6 @@ Route::group([
     Route::post('createCourse', [AdminController::class, 'createCourse']);
     Route::get('getAllCourses', [AdminController::class, 'getAllCourses']);
     Route::post('assignCourseToProfessor', [AdminController::class, 'assignCourseToProfessor']);
-     Route::post('createAccount', [AdminController::class, 'createAccount']);
+    Route::post('createAccount', [AdminController::class, 'createAccount']);
+    Route::delete('deleteAccount', [AdminController::class, 'deleteAccount']);
 });

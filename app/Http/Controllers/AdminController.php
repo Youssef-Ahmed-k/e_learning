@@ -36,6 +36,27 @@ public function createAccount(Register $request)
         ], 500);
     }
 }
+
+public function deleteAccount(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Account deleted successfully',
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
     public function assignRole(Request $request)
     {
         $request->validate([
