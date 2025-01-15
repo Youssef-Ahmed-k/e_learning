@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Register;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Course;
@@ -14,12 +15,34 @@ class AdminController extends Controller
         $this->middleware('role:admin');
     }
 
+  
+public function createAccount(Register $request)
+{
+    try {
+        $data = $request->validated();
+        $user = User::create($data);
+
+        return response()->json([
+            'message' => 'Account created successfully',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+            ]
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
     public function assignRole(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'role' => 'required|in:admin,user,professor'
         ]);
+
 
         $user = User::find($request->user_id);
 
