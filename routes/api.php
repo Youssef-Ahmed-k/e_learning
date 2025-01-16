@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CourseRegistrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,13 +24,13 @@ Route::group([
 
 ], function ($router) {
 
-    Route::post('login', [AuthController::class,'login']);
-    Route::post('register',  [AuthController::class,'register']);
-    Route::post('logout',  [AuthController::class,'logout']);
-    Route::post('refresh',  [AuthController::class,'refresh']);
-    Route::post('me',  [AuthController::class,'me']);
-    Route::patch('updateProfile',  [AuthController::class,'updateProfile']);
-    Route::patch('updatePassword',  [AuthController::class,'updatePassword']);
+    Route::post('login', [AuthController::class, 'login']);
+    Route::post('register',  [AuthController::class, 'register']);
+    Route::post('logout',  [AuthController::class, 'logout']);
+    Route::post('refresh',  [AuthController::class, 'refresh']);
+    Route::post('me',  [AuthController::class, 'me']);
+    Route::patch('updateProfile',  [AuthController::class, 'updateProfile']);
+    Route::patch('updatePassword',  [AuthController::class, 'updatePassword']);
 });
 
 Route::group([
@@ -38,7 +39,7 @@ Route::group([
     'prefix' => 'admin'
 
 ], function ($router) {
-    Route::get('allUsers',  [AuthController::class,'getAllUsers'])->middleware('role:admin');
+    Route::get('allUsers',  [AuthController::class, 'getAllUsers'])->middleware('role:admin');
     Route::post('assignRole', [AdminController::class, 'assignRole']);
     Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
     Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
@@ -49,3 +50,5 @@ Route::group([
     Route::delete('deleteUserAccount', [AdminController::class, 'deleteUserAccount']);
     Route::patch('updateUserAccount', [AdminController::class, 'updateUserAccount']);
 });
+
+Route::middleware('api')->post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
