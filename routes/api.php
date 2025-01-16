@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseRegistrationController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\StudentController;
@@ -20,10 +21,8 @@ use App\Http\Controllers\StudentController;
 */
 
 Route::group([
-
     'middleware' => 'api',
     'prefix' => 'auth'
-
 ], function ($router) {
 
     Route::post('login', [AuthController::class, 'login']);
@@ -36,10 +35,8 @@ Route::group([
 });
 
 Route::group([
-
     'middleware' => 'api',
     'prefix' => 'admin'
-
 ], function ($router) {
     Route::get('allUsers',  [AuthController::class, 'getAllUsers'])->middleware('role:admin');
     Route::post('assignRole', [AdminController::class, 'assignRole']);
@@ -53,23 +50,24 @@ Route::group([
     Route::patch('updateUserAccount', [AdminController::class, 'updateUserAccount']);
 });
 
-Route::middleware('api')->post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'course'
+], function ($router) {
+    Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
+    Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
+});
 
 Route::group([
-
     'middleware' => 'api',
     'prefix' => 'student'
-
 ], function ($router) {
     Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
 });
 
 Route::group([
-
     'middleware' => 'api',
     'prefix' => 'professor'
-
 ], function ($router) {
-    Route::get('getStudentsInCourse', [ProfessorController::class, 'getStudentsInCourse']);
     Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
 });

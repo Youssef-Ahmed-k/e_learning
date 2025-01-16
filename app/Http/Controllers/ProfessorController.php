@@ -24,13 +24,5 @@ class ProfessorController extends Controller
         return response()->json(['courses' => $courses]);
     }
 
-    // view all students registered for a specific course
-    public function getStudentsInCourse($courseID)
-    {
-        $students = CourseRegistration::with('student')
-            ->where('CourseID', $courseID)
-            ->get();
-
-        return response()->json(['students' => $students]);
-    }
+    
 }
