@@ -65,6 +65,7 @@ Route::group([
     'prefix' => 'student'
 ], function ($router) {
     Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
+    Route::post('viewCourseMaterials', [StudentController::class, 'viewCourseMaterials']);
 });
 
 Route::group([
