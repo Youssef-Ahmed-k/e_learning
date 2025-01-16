@@ -72,4 +72,5 @@ Route::group([
     'prefix' => 'professor'
 ], function ($router) {
     Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
 });
