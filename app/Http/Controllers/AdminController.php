@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Register;
+use App\Http\Requests\UpdateProfile;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Course;
@@ -14,12 +16,91 @@ class AdminController extends Controller
         $this->middleware('role:admin');
     }
 
+  
+public function createUserAccount(Register $request)
+{
+    try {
+        $data = $request->validated();
+        $user = User::create($data);
+
+        return response()->json([
+            'message' => 'Account created successfully',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+            ]
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function deleteUserAccount(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Account deleted successfully',
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function updateUserAccount(UpdateProfile $request)
+{
+    try {
+        $user = User::findOrFail($request->user_id);
+
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+        $user->save();
+
+        return response()->json([
+            'message' => 'Account updated successfully',
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+            ]
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
     public function assignRole(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'role' => 'required|in:admin,user,professor'
         ]);
+
 
         $user = User::find($request->user_id);
 
