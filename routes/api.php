@@ -74,4 +74,5 @@ Route::group([
 ], function ($router) {
     Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
     Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
+    Route::delete('deleteCourseMaterial', [ProfessorController::class, 'deleteCourseMaterial']);
 });

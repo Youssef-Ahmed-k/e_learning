@@ -52,5 +52,37 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+    public function deleteCourseMaterial(Request $request)
+    {
+        $request->validate([
+            'material_id' => 'required|exists:materials,MaterialID',
+        ]);
+
+        try {
+            $material = Material::findOrFail($request->material_id);
+
+            // Check if the authenticated professor is the owner of the material
+            if ($material->ProfessorID !== auth()->id()) {
+                return response()->json([
+                    'message' => 'You are not authorized to delete this material.',
+                ], 403);
+            }
+
+            // Delete the material file from storage
+            Storage::delete($material->FilePath);
+
+            // Delete the material record from the database
+            $material->delete();
+
+            return response()->json([
+                'message' => 'Course material deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
 
