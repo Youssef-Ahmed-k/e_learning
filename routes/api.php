@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CourseRegistrationController;
+use App\Http\Controllers\StudentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,3 +53,12 @@ Route::group([
 });
 
 Route::middleware('api')->post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
+
+Route::group([
+
+    'middleware' => 'api',
+    'prefix' => 'student'
+
+], function ($router) {
+    Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
+});
