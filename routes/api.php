@@ -57,6 +57,7 @@ Route::group([
     Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
+    Route::get('', [StudentController::class, 'getAllCoursesWithProfessors']);
 });
 
 Route::group([

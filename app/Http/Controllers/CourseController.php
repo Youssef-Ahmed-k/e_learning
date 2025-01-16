@@ -11,7 +11,7 @@ class CourseController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        //$this->middleware('role:professor');
+        $this->middleware('role:admin');
     }
 
     // view all students registered for a specific course

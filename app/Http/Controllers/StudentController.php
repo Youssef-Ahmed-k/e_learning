@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Course;
 use App\Models\CourseRegistration;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,16 @@ class StudentController extends Controller
 
         return response()->json([
             'registeredCourses' => $registeredCourses,
+        ]);
+    }
+
+    // get all courses and their professors
+    public function getAllCoursesWithProfessors()
+    {
+        $courses = Course::with('professor')->get();
+
+        return response()->json([
+            'courses' => $courses,
         ]);
     }
 }
