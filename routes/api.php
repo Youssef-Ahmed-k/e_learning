@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CourseRegistrationController;
+use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\StudentController;
 
 /*
@@ -61,4 +62,14 @@ Route::group([
 
 ], function ($router) {
     Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
+});
+
+Route::group([
+
+    'middleware' => 'api',
+    'prefix' => 'professor'
+
+], function ($router) {
+    Route::get('getStudentsInCourse', [ProfessorController::class, 'getStudentsInCourse']);
+    Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
 });
