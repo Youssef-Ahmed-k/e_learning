@@ -65,6 +65,7 @@ Route::group([
     'prefix' => 'student'
 ], function ($router) {
     Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
+    Route::post('viewCourseMaterials', [StudentController::class, 'viewCourseMaterials']);
 });
 
 Route::group([
@@ -72,4 +73,7 @@ Route::group([
     'prefix' => 'professor'
 ], function ($router) {
     Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
+    Route::delete('deleteCourseMaterial', [ProfessorController::class, 'deleteCourseMaterial']);
+    Route::patch('updateCourseMaterial', [ProfessorController::class, 'updateCourseMaterial']);
 });
