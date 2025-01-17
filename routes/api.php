@@ -75,5 +75,5 @@ Route::group([
     Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
     Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('deleteCourseMaterial', [ProfessorController::class, 'deleteCourseMaterial']);
-    Route::post('updateCourseMaterial', [ProfessorController::class, 'updateCourseMaterial']);
+    Route::patch('updateCourseMaterial', [ProfessorController::class, 'updateCourseMaterial']);
 });

@@ -37,27 +37,27 @@ class StudentController extends Controller
             'courses' => $courses,
         ]);
     }
-     // View course materials
-     public function viewCourseMaterials(Request $request)
-     {
-         $request->validate([
-             'course_id' => 'required|exists:courses,CourseID',
-         ]);
- 
-         try {
-             $courseID = $request->course_id;
- 
-             // Fetch course materials
-             $courseMaterials = Material::where('CourseID', $courseID)->get();
- 
-             return response()->json([
-                 'courseMaterials' => $courseMaterials,
-             ]);
-         } catch (\Exception $e) {
-             return response()->json([
-                 'message' => 'Something went wrong',
-                 'error' => $e->getMessage(),
-             ], 500);
-         }
-     }
+    // View course materials
+    public function viewCourseMaterials(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,CourseID',
+        ]);
+
+        try {
+            $courseID = $request->course_id;
+
+            // Fetch course materials
+            $courseMaterials = Material::where('CourseID', $courseID)->get();
+
+            return response()->json([
+                'courseMaterials' => $courseMaterials,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
