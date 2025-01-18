@@ -26,7 +26,7 @@ class ProfessorController extends Controller
             ->where('ProfessorID', auth()->user()->id)
             ->get();
 
-        return response()->json(['courses' => $courses]);
+        return response()->json(['data' => $courses]);
     }
     public function uploadCourseMaterial(UploadMaterial $request)
     {
@@ -44,7 +44,9 @@ class ProfessorController extends Controller
 
             return response()->json([
                 'message' => 'Course material uploaded successfully',
-                'material' => $material,
+                'data' => [
+                    'material' => $material,
+                ]
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -120,7 +122,9 @@ class ProfessorController extends Controller
 
             return response()->json([
                 'message' => 'Course material updated successfully',
-                'material' => $material,
+                'data' => [
+                    'material' => $material,
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

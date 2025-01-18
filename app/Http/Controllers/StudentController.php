@@ -24,7 +24,9 @@ class StudentController extends Controller
             ->get();
 
         return response()->json([
-            'registeredCourses' => $registeredCourses,
+            'data' => [
+                'registeredCourses' => $registeredCourses,
+            ]
         ]);
     }
 
@@ -34,7 +36,9 @@ class StudentController extends Controller
         $courses = Course::with('professor')->get();
 
         return response()->json([
-            'courses' => $courses,
+            'data' => [
+                'courses' => $courses,
+            ]
         ]);
     }
     // View course materials
@@ -51,7 +55,9 @@ class StudentController extends Controller
             $courseMaterials = Material::where('CourseID', $courseID)->get();
 
             return response()->json([
-                'courseMaterials' => $courseMaterials,
+                'data' => [
+                    'courseMaterials' => $courseMaterials,
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
