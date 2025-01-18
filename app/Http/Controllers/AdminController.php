@@ -161,12 +161,19 @@ class AdminController extends Controller
         ]);
     }
 
+
+
     public function getAllCourses()
     {
         $courses = Course::paginate(10);
 
         return response()->json([
-            'courses' => $courses
+            'courses' => $courses->items(),
+            'pagination' => [
+                "current_page" => $courses->currentPage(),
+                "total_pages" => $courses->lastPage(),
+                "total_items" => $courses->total(),
+            ]
         ]);
     }
 
