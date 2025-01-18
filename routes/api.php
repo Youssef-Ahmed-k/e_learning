@@ -8,6 +8,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseRegistrationController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,15 +31,15 @@ Route::group([
     Route::post('logout',  [AuthController::class, 'logout']);
     Route::post('refresh',  [AuthController::class, 'refresh']);
     Route::post('me',  [AuthController::class, 'me']);
-    Route::patch('updateProfile',  [AuthController::class, 'updateProfile']);
-    Route::patch('updatePassword',  [AuthController::class, 'updatePassword']);
+    Route::patch('updateProfile',  [UserController::class, 'updateProfile']);
+    Route::patch('updatePassword',  [UserController::class, 'updatePassword']);
 });
 
 Route::group([
     'middleware' => 'api',
     'prefix' => 'admin'
 ], function ($router) {
-    Route::get('allUsers',  [AuthController::class, 'getAllUsers'])->middleware('role:admin');
+    Route::get('allUsers',  [UserController::class, 'getAllUsers'])->middleware('role:admin');
     Route::post('assignRole', [AdminController::class, 'assignRole']);
     Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
     Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
