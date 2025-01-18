@@ -31,14 +31,15 @@ class StudentController extends Controller
     }
 
     // View course materials
-    public function viewCourseMaterials(Request $request)
+    public function viewCourseMaterials($courseID)
     {
-        $request->validate([
-            'course_id' => 'required|exists:courses,CourseID',
-        ]);
-
         try {
-            $courseID = $request->course_id;
+            // Validate the course ID directly from the URL parameter
+            if (!Course::where('CourseID', $courseID)->exists()) {
+                return response()->json([
+                    'message' => 'Invalid course ID',
+                ], 404);
+            }
 
             // Fetch course materials
             $courseMaterials = Material::where('CourseID', $courseID)->get();

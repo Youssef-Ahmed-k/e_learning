@@ -12,8 +12,8 @@ class CourseController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:admin');
-        $this->middleware('role:user,admin')->only('getAllCoursesWithProfessors');
+        $this->middleware('role:admin')->except('getAllCoursesWithProfessors');
+        $this->middleware('role:user')->only('getAllCoursesWithProfessors');
     }
 
     // view all students registered for a specific course
@@ -137,6 +137,17 @@ class CourseController extends Controller
 
     // get all courses and their professors
     public function getAllCoursesWithProfessors()
+    {
+        $courses = Course::with('professor')->get();
+
+        return response()->json([
+            'data' => [
+                'courses' => $courses,
+            ]
+        ]);
+    }
+
+    public function getAllCoursesWithProfessorsForAdmin()
     {
         $courses = Course::with('professor')->get();
 
