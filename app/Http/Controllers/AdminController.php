@@ -16,84 +16,84 @@ class AdminController extends Controller
         $this->middleware('role:admin');
     }
 
-  
-public function createUserAccount(Register $request)
-{
-    try {
-        $data = $request->validated();
-        $user = User::create($data);
 
-        return response()->json([
-            'message' => 'Account created successfully',
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-            ]
-        ], 201);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Something went wrong',
-            'error' => $e->getMessage(),
-        ], 500);
+    public function createUserAccount(Register $request)
+    {
+        try {
+            $data = $request->validated();
+            $user = User::create($data);
+
+            return response()->json([
+                'message' => 'Account created successfully',
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create user account',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-public function deleteUserAccount(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|exists:users,id',
-    ]);
+    public function deleteUserAccount(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
 
-    try {
-        $user = User::findOrFail($request->user_id);
-        $user->delete();
+        try {
+            $user = User::findOrFail($request->user_id);
+            $user->delete();
 
-        return response()->json([
-            'message' => 'Account deleted successfully',
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Something went wrong',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'message' => 'Account deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-public function updateUserAccount(UpdateProfile $request)
-{
-    try {
-        $user = User::findOrFail($request->user_id);
+    public function updateUserAccount(UpdateProfile $request)
+    {
+        try {
+            $user = User::findOrFail($request->user_id);
 
-        if ($request->has('name')) {
-            $user->name = $request->name;
-        }
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-        if ($request->has('phone')) {
-            $user->phone = $request->phone;
-        }
-        if ($request->has('address')) {
-            $user->address = $request->address;
-        }
-        $user->save();
+            if ($request->has('name')) {
+                $user->name = $request->name;
+            }
+            if ($request->has('email')) {
+                $user->email = $request->email;
+            }
+            if ($request->has('phone')) {
+                $user->phone = $request->phone;
+            }
+            if ($request->has('address')) {
+                $user->address = $request->address;
+            }
+            $user->save();
 
-        return response()->json([
-            'message' => 'Account updated successfully',
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'address' => $user->address,
-            ]
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Something went wrong',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'message' => 'Account updated successfully',
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'address' => $user->address,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
     public function assignRole(Request $request)
     {
         $request->validate([
@@ -122,7 +122,12 @@ public function updateUserAccount(UpdateProfile $request)
         $students = User::where('role', 'user')->paginate(10);
 
         return response()->json([
-            'students' => $students
+            'students' => $students->items(),
+            'pagination' => [
+                'current_page' => $students->currentPage(),
+                'total_pages' => $students->lastPage(),
+                'total_items' => $students->total(),
+            ]
         ]);
     }
 
@@ -131,7 +136,12 @@ public function updateUserAccount(UpdateProfile $request)
         $professors = User::where('role', 'professor')->paginate(10);
 
         return response()->json([
-            'professors' => $professors
+            'professors' => $professors->items(),
+            'pagination' => [
+                'current_page' => $professors->currentPage(),
+                'total_pages' => $professors->lastPage(),
+                'total_items' => $professors->total(),
+            ]
         ]);
     }
 
@@ -184,13 +194,20 @@ public function updateUserAccount(UpdateProfile $request)
                 'message' => 'Course not found'
             ], 404);
         }
-        
+
         $course->ProfessorID = $professor->id;
         $course->save();
 
         return response()->json([
             'message' => 'Course assigned successfully',
-            'course' => $course
+            'course' => [
+                'id' => $course->CourseID,
+                'name' => $course->CourseName,
+                'professor' => [
+                    'id' => $professor->id,
+                    'name' => $professor->name,
+                ],
+            ],
         ]);
     }
 }

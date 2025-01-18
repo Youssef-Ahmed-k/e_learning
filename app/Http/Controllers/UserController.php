@@ -33,7 +33,12 @@ class UserController extends Controller
         $users = User::paginate(10);
 
         return response()->json([
-            'data' => $users
+            'data' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'total_pages' => $users->lastPage(),
+                'total_items' => $users->total(),
+            ]
         ]);
     }
 
