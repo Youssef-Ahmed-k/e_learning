@@ -30,7 +30,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Registration successful',
-                'user' => [
+                'data' => [
                     'name' => $user->name,
                     'email' => $user->email,
                 ]
@@ -59,14 +59,14 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful',
-            'user' => [
+            'data' => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => auth()->factory()->getTTL() * 60,
             ],
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60,
         ]);
     }
 
@@ -117,44 +117,4 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 99999
         ]);
     }
-
-    public function updateProfile(UpdateProfile $request)
-    {
-        $user = auth()->user();
-
-        $user->update($request->only(['name', 'email', 'phone', 'address']));
-
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user
-        ]);
-    }
-
-    public function getAllUsers()
-    {
-        $user = auth()->user();
-
-        $users = User::paginate(10);
-
-        return response()->json([
-            'users' => $users
-        ]);
-    }
-
-    public function updatePassword(UpdatePassword $request)
-    {
-        $user = auth()->user();
-    
-        if (!password_verify($request->current_password, $user->password)) {
-            return response()->json(['message' => 'Current password is incorrect'], 401);
-        }
-    
-        $user->password = $request->new_password;
-        $user->save();
-    
-        return response()->json([
-            'message' => 'Password updated successfully. Please log in again.'
-        ]);
-    }
-    
 }

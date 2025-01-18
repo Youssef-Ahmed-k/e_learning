@@ -8,6 +8,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseRegistrationController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,25 +30,30 @@ Route::group([
     Route::post('register',  [AuthController::class, 'register']);
     Route::post('logout',  [AuthController::class, 'logout']);
     Route::post('refresh',  [AuthController::class, 'refresh']);
-    Route::post('me',  [AuthController::class, 'me']);
-    Route::patch('updateProfile',  [AuthController::class, 'updateProfile']);
-    Route::patch('updatePassword',  [AuthController::class, 'updatePassword']);
+    Route::post('profile',  [AuthController::class, 'me']);
+    Route::patch('profile/update',  [UserController::class, 'updateProfile']);
+    Route::patch('password/update',  [UserController::class, 'updatePassword']);
 });
 
 Route::group([
     'middleware' => 'api',
     'prefix' => 'admin'
 ], function ($router) {
-    Route::get('allUsers',  [AuthController::class, 'getAllUsers'])->middleware('role:admin');
-    Route::post('assignRole', [AdminController::class, 'assignRole']);
-    Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
-    Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
-    Route::post('createCourse', [AdminController::class, 'createCourse']);
-    Route::get('getAllCourses', [AdminController::class, 'getAllCourses']);
-    Route::post('assignCourseToProfessor', [AdminController::class, 'assignCourseToProfessor']);
-    Route::post('createUserAccount', [AdminController::class, 'createUserAccount']);
-    Route::delete('deleteUserAccount', [AdminController::class, 'deleteUserAccount']);
-    Route::patch('updateUserAccount', [AdminController::class, 'updateUserAccount']);
+    Route::get('users',  [UserController::class, 'getAllUsers']);
+    Route::post('users/assign-role', [AdminController::class, 'assignRole']);
+    Route::get('students', [AdminController::class, 'getAllStudents']);
+    Route::get('professors', [AdminController::class, 'getAllProfessors']);
+
+    Route::post('courses', [CourseController::class, 'createCourse']);
+    Route::patch('courses/{course}', [CourseController::class, 'updateCourse']);
+    Route::delete('courses/{course}', [CourseController::class, 'deleteCourse']);
+    Route::get('allCourses', [CourseController::class, 'getAllCourses']);
+    Route::post('courses/assign-professor', [CourseController::class, 'assignCourseToProfessor']);
+    Route::get('courses/with-professor', [CourseController::class, 'getAllCoursesWithProfessorsForAdmin']);
+
+    Route::post('users', [AdminController::class, 'createUserAccount']);
+    Route::delete('users/{user}', [AdminController::class, 'deleteUserAccount']);
+    Route::patch('users/{user}', [AdminController::class, 'updateUserAccount']);
 });
 
 Route::group([
@@ -57,23 +63,23 @@ Route::group([
     Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
-    Route::get('', [StudentController::class, 'getAllCoursesWithProfessors']);
+    Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
 });
 
 Route::group([
     'middleware' => 'api',
     'prefix' => 'student'
 ], function ($router) {
-    Route::get('viewRegisteredCourses', [StudentController::class, 'viewRegisteredCourses']);
-    Route::post('viewCourseMaterials', [StudentController::class, 'viewCourseMaterials']);
+    Route::get('courses', [StudentController::class, 'viewRegisteredCourses']);
+    Route::get('materials/{courseID}', [StudentController::class, 'viewCourseMaterials']);
 });
 
 Route::group([
     'middleware' => 'api',
     'prefix' => 'professor'
 ], function ($router) {
-    Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
-    Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
-    Route::delete('deleteCourseMaterial', [ProfessorController::class, 'deleteCourseMaterial']);
-    Route::patch('updateCourseMaterial', [ProfessorController::class, 'updateCourseMaterial']);
+    Route::get('courses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
+    Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
+    Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
 });

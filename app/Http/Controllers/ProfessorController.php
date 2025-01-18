@@ -26,7 +26,7 @@ class ProfessorController extends Controller
             ->where('ProfessorID', auth()->user()->id)
             ->get();
 
-        return response()->json(['courses' => $courses]);
+        return response()->json(['data' => $courses]);
     }
     public function uploadCourseMaterial(UploadMaterial $request)
     {
@@ -44,7 +44,9 @@ class ProfessorController extends Controller
 
             return response()->json([
                 'message' => 'Course material uploaded successfully',
-                'material' => $material,
+                'data' => [
+                    'material' => $material,
+                ]
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -53,14 +55,11 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
-    public function deleteCourseMaterial(Request $request)
+    public function deleteCourseMaterial($material_id)
     {
-        $request->validate([
-            'material_id' => 'required|exists:materials,MaterialID',
-        ]);
-
         try {
-            $material = Material::findOrFail($request->material_id);
+            // Validate material_id exists
+            $material = Material::findOrFail($material_id);
 
             // Check if the authenticated professor is the owner of the material
             if ($material->ProfessorID !== auth()->id()) {
@@ -85,11 +84,11 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
-    public function updateCourseMaterial(UpdateMaterial $request)
+    public function updateCourseMaterial(Request $request, $material_id)
     {
-
         try {
-            $material = Material::findOrFail($request->material_id);
+            // Validate material_id exists
+            $material = Material::findOrFail($material_id);
 
             // Check if the authenticated professor is the owner of the material
             if ($material->ProfessorID !== auth()->id()) {
@@ -97,6 +96,14 @@ class ProfessorController extends Controller
                     'message' => 'You are not authorized to update this material.',
                 ], 403);
             }
+
+            // Validate input fields (optional if not handled in custom form request)
+            $request->validate([
+                'title' => 'sometimes|string|max:255',
+                'description' => 'sometimes|string|max:255',
+                'file' => 'sometimes|file|mimes:pdf,docx,txt|max:10240',
+                'material_type' => 'sometimes|string|max:50',
+            ]);
 
             if ($request->has('title')) {
                 $material->Title = $request->title;
@@ -120,7 +127,9 @@ class ProfessorController extends Controller
 
             return response()->json([
                 'message' => 'Course material updated successfully',
-                'material' => $material,
+                'data' => [
+                    'material' => $material,
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

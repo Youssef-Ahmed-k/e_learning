@@ -24,34 +24,30 @@ class StudentController extends Controller
             ->get();
 
         return response()->json([
-            'registeredCourses' => $registeredCourses,
+            'data' => [
+                'registeredCourses' => $registeredCourses,
+            ]
         ]);
     }
 
-    // get all courses and their professors
-    public function getAllCoursesWithProfessors()
-    {
-        $courses = Course::with('professor')->get();
-
-        return response()->json([
-            'courses' => $courses,
-        ]);
-    }
     // View course materials
-    public function viewCourseMaterials(Request $request)
+    public function viewCourseMaterials($courseID)
     {
-        $request->validate([
-            'course_id' => 'required|exists:courses,CourseID',
-        ]);
-
         try {
-            $courseID = $request->course_id;
+            // Validate the course ID directly from the URL parameter
+            if (!Course::where('CourseID', $courseID)->exists()) {
+                return response()->json([
+                    'message' => 'Invalid course ID',
+                ], 404);
+            }
 
             // Fetch course materials
             $courseMaterials = Material::where('CourseID', $courseID)->get();
 
             return response()->json([
-                'courseMaterials' => $courseMaterials,
+                'data' => [
+                    'courseMaterials' => $courseMaterials,
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
