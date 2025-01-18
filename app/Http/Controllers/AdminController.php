@@ -38,14 +38,9 @@ class AdminController extends Controller
         }
     }
 
-    public function deleteUserAccount(Request $request)
+    public function deleteUserAccount(User $user)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
-
         try {
-            $user = User::findOrFail($request->user_id);
             $user->delete();
 
             return response()->json([
@@ -59,11 +54,9 @@ class AdminController extends Controller
         }
     }
 
-    public function updateUserAccount(UpdateProfile $request)
+    public function updateUserAccount(UpdateProfile $request, User $user)   
     {
         try {
-            $user = User::findOrFail($request->user_id);
-
             if ($request->has('name')) {
                 $user->name = $request->name;
             }

@@ -51,8 +51,8 @@ Route::group([
     Route::post('assignCourseToProfessor', [CourseController::class, 'assignCourseToProfessor']);
     
     Route::post('users', [AdminController::class, 'createUserAccount']);
-    Route::delete('deleteUserAccount', [AdminController::class, 'deleteUserAccount']);
-    Route::patch('updateUserAccount', [AdminController::class, 'updateUserAccount']);
+    Route::delete('users/{user}', [AdminController::class, 'deleteUserAccount']);
+    Route::patch('users/{user}', [AdminController::class, 'updateUserAccount']);
 });
 
 Route::group([
