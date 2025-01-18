@@ -30,9 +30,9 @@ Route::group([
     Route::post('register',  [AuthController::class, 'register']);
     Route::post('logout',  [AuthController::class, 'logout']);
     Route::post('refresh',  [AuthController::class, 'refresh']);
-    Route::post('me',  [AuthController::class, 'me']);
-    Route::patch('updateProfile',  [UserController::class, 'updateProfile']);
-    Route::patch('updatePassword',  [UserController::class, 'updatePassword']);
+    Route::post('profile',  [AuthController::class, 'me']);
+    Route::patch('profile/update',  [UserController::class, 'updateProfile']);
+    Route::patch('password/update',  [UserController::class, 'updatePassword']);
 });
 
 Route::group([
@@ -60,7 +60,7 @@ Route::group([
     Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
-    Route::get('', [StudentController::class, 'getAllCoursesWithProfessors']);
+    Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
 });
 
 Route::group([
