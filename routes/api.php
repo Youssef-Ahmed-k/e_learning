@@ -78,7 +78,7 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'professor'
 ], function ($router) {
-    Route::get('viewRegisteredCourses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::get('courses', [ProfessorController::class, 'viewRegisteredCourses']);
     Route::post('uploadCourseMaterial', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('deleteCourseMaterial', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('updateCourseMaterial', [ProfessorController::class, 'updateCourseMaterial']);
