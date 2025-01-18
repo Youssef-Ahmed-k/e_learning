@@ -161,7 +161,50 @@ class AdminController extends Controller
         ]);
     }
 
+    public function updateCourse(Request $request)
+    {
+        $request->validate([
+            'CourseID' => 'required|exists:courses,CourseID',
+            'CourseName' => 'required|string|max:255',
+        ]);
 
+        $course = Course::find($request->CourseID);
+
+        if (!$course) {
+            return response()->json([
+                'message' => 'Course not found'
+            ], 404);
+        }
+
+        $course->CourseName = $request->CourseName;
+        $course->save();
+
+        return response()->json([
+            'message' => 'Course updated successfully',
+            'course' => $course
+        ]);
+    }
+
+    public function deleteCourse(Request $request)
+    {
+        $request->validate([
+            'CourseID' => 'required|exists:courses,CourseID',
+        ]);
+
+        $course = Course::find($request->CourseID);
+
+        if (!$course) {
+            return response()->json([
+                'message' => 'Course not found'
+            ], 404);
+        }
+
+        $course->delete();
+
+        return response()->json([
+            'message' => 'Course deleted successfully'
+        ]);
+    }
 
     public function getAllCourses()
     {

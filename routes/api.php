@@ -44,6 +44,8 @@ Route::group([
     Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
     Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
     Route::post('createCourse', [AdminController::class, 'createCourse']);
+    Route::patch('updateCourse', [AdminController::class, 'updateCourse']);
+    Route::delete('deleteCourse', [AdminController::class, 'deleteCourse']);
     Route::get('getAllCourses', [AdminController::class, 'getAllCourses']);
     Route::post('assignCourseToProfessor', [AdminController::class, 'assignCourseToProfessor']);
     Route::post('createUserAccount', [AdminController::class, 'createUserAccount']);
