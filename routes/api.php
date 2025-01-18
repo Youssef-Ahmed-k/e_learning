@@ -44,11 +44,11 @@ Route::group([
     Route::get('students', [AdminController::class, 'getAllStudents']);
     Route::get('professors', [AdminController::class, 'getAllProfessors']);
     
-    Route::post('createCourse', [CourseController::class, 'createCourse']);
-    Route::patch('updateCourse', [CourseController::class, 'updateCourse']);
-    Route::delete('deleteCourse', [CourseController::class, 'deleteCourse']);
-    Route::get('getAllCourses', [CourseController::class, 'getAllCourses']);
-    Route::post('assignCourseToProfessor', [CourseController::class, 'assignCourseToProfessor']);
+    Route::post('courses', [CourseController::class, 'createCourse']);
+    Route::patch('courses/{course}', [CourseController::class, 'updateCourse']);
+    Route::delete('courses/{course}', [CourseController::class, 'deleteCourse']);
+    Route::get('allCourses', [CourseController::class, 'getAllCourses']);
+    Route::post('courses/assign-professor', [CourseController::class, 'assignCourseToProfessor']);
     
     Route::post('users', [AdminController::class, 'createUserAccount']);
     Route::delete('users/{user}', [AdminController::class, 'deleteUserAccount']);

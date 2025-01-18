@@ -37,7 +37,7 @@ class CourseController extends Controller
             return response()->json(['message' => 'Course not found'], 404);
         }
 
-        return response()->json(['courses' => $courses]);
+        return response()->json(['data' => $courses]);
     }
 
     public function createCourse(Request $request)
@@ -52,48 +52,27 @@ class CourseController extends Controller
 
         return response()->json([
             'message' => 'Course created successfully',
-            'course' => $course
+            'data' => $course
         ]);
     }
 
-    public function updateCourse(Request $request)
+    public function updateCourse(Request $request, Course $course)
     {
         $request->validate([
-            'CourseID' => 'required|exists:courses,CourseID',
             'CourseName' => 'required|string|max:255',
         ]);
-
-        $course = Course::find($request->CourseID);
-
-        if (!$course) {
-            return response()->json([
-                'message' => 'Course not found'
-            ], 404);
-        }
 
         $course->CourseName = $request->CourseName;
         $course->save();
 
         return response()->json([
             'message' => 'Course updated successfully',
-            'course' => $course
+            'data' => $course
         ]);
     }
 
-    public function deleteCourse(Request $request)
+    public function deleteCourse(Course $course)
     {
-        $request->validate([
-            'CourseID' => 'required|exists:courses,CourseID',
-        ]);
-
-        $course = Course::find($request->CourseID);
-
-        if (!$course) {
-            return response()->json([
-                'message' => 'Course not found'
-            ], 404);
-        }
-
         $course->delete();
 
         return response()->json([
