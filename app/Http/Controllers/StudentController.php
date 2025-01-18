@@ -30,17 +30,6 @@ class StudentController extends Controller
         ]);
     }
 
-    // get all courses and their professors
-    public function getAllCoursesWithProfessors()
-    {
-        $courses = Course::with('professor')->get();
-
-        return response()->json([
-            'data' => [
-                'courses' => $courses,
-            ]
-        ]);
-    }
     // View course materials
     public function viewCourseMaterials(Request $request)
     {

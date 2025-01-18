@@ -13,6 +13,7 @@ class CourseController extends Controller
     {
         $this->middleware('auth:api');
         $this->middleware('role:admin');
+        $this->middleware('role:user,admin')->only('getAllCoursesWithProfessors');
     }
 
     // view all students registered for a specific course
@@ -152,6 +153,18 @@ class CourseController extends Controller
                     'name' => $professor->name,
                 ],
             ],
+        ]);
+    }
+
+    // get all courses and their professors
+    public function getAllCoursesWithProfessors()
+    {
+        $courses = Course::with('professor')->get();
+
+        return response()->json([
+            'data' => [
+                'courses' => $courses,
+            ]
         ]);
     }
 }
