@@ -39,15 +39,15 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'admin'
 ], function ($router) {
-    Route::get('allUsers',  [UserController::class, 'getAllUsers'])->middleware('role:admin');
+    Route::get('allUsers',  [UserController::class, 'getAllUsers']);
     Route::post('assignRole', [AdminController::class, 'assignRole']);
     Route::get('getAllStudents', [AdminController::class, 'getAllStudents']);
     Route::get('getAllProfessors', [AdminController::class, 'getAllProfessors']);
-    Route::post('createCourse', [AdminController::class, 'createCourse']);
-    Route::patch('updateCourse', [AdminController::class, 'updateCourse']);
-    Route::delete('deleteCourse', [AdminController::class, 'deleteCourse']);
-    Route::get('getAllCourses', [AdminController::class, 'getAllCourses']);
-    Route::post('assignCourseToProfessor', [AdminController::class, 'assignCourseToProfessor']);
+    Route::post('createCourse', [CourseController::class, 'createCourse']);
+    Route::patch('updateCourse', [CourseController::class, 'updateCourse']);
+    Route::delete('deleteCourse', [CourseController::class, 'deleteCourse']);
+    Route::get('getAllCourses', [CourseController::class, 'getAllCourses']);
+    Route::post('assignCourseToProfessor', [CourseController::class, 'assignCourseToProfessor']);
     Route::post('createUserAccount', [AdminController::class, 'createUserAccount']);
     Route::delete('deleteUserAccount', [AdminController::class, 'deleteUserAccount']);
     Route::patch('updateUserAccount', [AdminController::class, 'updateUserAccount']);

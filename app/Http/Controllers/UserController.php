@@ -12,6 +12,7 @@ class UserController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
+        $this->middleware('role:admin')->only('getAllUsers');
     }
 
     public function updateProfile(UpdateProfile $request)
