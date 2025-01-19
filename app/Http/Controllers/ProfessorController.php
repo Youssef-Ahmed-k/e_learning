@@ -31,12 +31,39 @@ class ProfessorController extends Controller
     public function uploadCourseMaterial(UploadMaterial $request)
     {
         try {
-            $filePath = $request->file('file')->store('course_materials');
+            // Validate input fields
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string|max:255',
+                'file' => 'nullable|file|mimes:pdf,docx,txt|max:10240',
+                'video' => 'nullable|file|mimes:mp4|max:10240',
+                'material_type' => 'required|string|max:50',
+                'course_id' => 'required|integer|exists:courses,CourseID',
+            ]);
+
+            // Ensure only one file or video is provided if both are present
+            if ($request->hasFile('file') && $request->hasFile('video')) {
+                return response()->json([
+                    'message' => 'You can only upload either a file or a video, not both.',
+                ], 400);
+            }
+
+            // Store the file or video
+            $filePath = null;
+            $videoPath = null;
+
+            if ($request->hasFile('file')) {
+                $filePath = $request->file('file')->store('course_materials');
+            }
+            if ($request->hasFile('video')) {
+                $videoPath = $request->file('video')->store('course_videos');
+            }
 
             $material = Material::create([
                 'Title' => $request->title,
                 'Description' => $request->description,
                 'FilePath' => $filePath,
+                'VideoPath' => $videoPath,
                 'MaterialType' => $request->material_type,
                 'CourseID' => $request->course_id,
                 'ProfessorID' => auth()->id(),
@@ -68,8 +95,9 @@ class ProfessorController extends Controller
                 ], 403);
             }
 
-            // Delete the material file from storage
+            // Delete the material file and video from storage
             Storage::delete($material->FilePath);
+            Storage::delete($material->VideoPath);
 
             // Delete the material record from the database
             $material->delete();
@@ -97,14 +125,23 @@ class ProfessorController extends Controller
                 ], 403);
             }
 
-            // Validate input fields (optional if not handled in custom form request)
+            // Validate input fields
             $request->validate([
                 'title' => 'sometimes|string|max:255',
                 'description' => 'sometimes|string|max:255',
                 'file' => 'sometimes|file|mimes:pdf,docx,txt|max:10240',
+                'video' => 'sometimes|file|mimes:mp4|max:10240',
                 'material_type' => 'sometimes|string|max:50',
             ]);
 
+            // Ensure only one file or video is provided if both are present
+            if ($request->hasFile('file') && $request->hasFile('video')) {
+                return response()->json([
+                    'message' => 'You can only upload either a file or a video, not both.',
+                ], 400);
+            }
+
+            // Update fields if present in the request
             if ($request->has('title')) {
                 $material->Title = $request->title;
             }
@@ -118,6 +155,20 @@ class ProfessorController extends Controller
                 // Store the new file
                 $filePath = $request->file('file')->store('course_materials');
                 $material->FilePath = $filePath;
+
+                // Remove the old video path if a new file is uploaded
+                $material->VideoPath = null;
+            }
+            if ($request->has('video')) {
+                // Delete the old video from storage
+                Storage::delete($material->VideoPath);
+
+                // Store the new video
+                $videoPath = $request->file('video')->store('course_videos');
+                $material->VideoPath = $videoPath;
+
+                // Remove the old file path if a new video is uploaded
+                $material->FilePath = null;
             }
             if ($request->has('material_type')) {
                 $material->MaterialType = $request->material_type;

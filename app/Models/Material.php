@@ -15,6 +15,7 @@ class Material extends Model
         'Title',
         'Description',
         'FilePath',
+        'VideoPath',
         'MaterialType',
         'CourseID',
         'ProfessorID',

@@ -24,8 +24,9 @@ class UpdateMaterial extends FormRequest
         return [
             'material_id' => 'required|exists:materials,MaterialID',
             'title' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-            'file' => 'sometimes|file|mimes:pdf,doc,docx,ppt,pptx,zip',
+            'description' => 'sometimes|string|max:255',
+            'file' => 'sometimes|file|mimes:pdf,docx,txt|max:10240',
+            'video' => 'sometimes|file|mimes:mp4|max:10240',
             'material_type' => 'sometimes|string|max:50',
         ];
     }
@@ -36,9 +37,16 @@ class UpdateMaterial extends FormRequest
             'material_id.required' => 'The material ID field is required.',
             'material_id.exists' => 'The selected material ID is invalid.',
             'title.string' => 'The title must be a string.',
+            'title.max' => 'The title may not be greater than 255 characters.',
             'description.string' => 'The description must be a string.',
-            'file.mimes' => 'The file must be a type of: pdf, doc, docx, ppt, pptx, zip.',
+            'description.max' => 'The description may not be greater than 255 characters.',
+            'file.file' => 'The file must be a file.',
+            'file.mimes' => 'The file must be a type of: pdf, docx, txt.',
+            'file.max' => 'The file may not be greater than 10240 kilobytes.',
+            'video.file' => 'The video must be a file.',
+            'video.mimes' => 'The video must be a type of: mp4.',
+            'video.max' => 'The video may not be greater than 10240 kilobytes.',
             'material_type.string' => 'The material type must be a string.',
-        ];
+            'material_type.max' => 'The material type may not be greater than 50 characters.',];
     }
 }

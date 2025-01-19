@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id('MaterialID');
             $table->string('Title');
             $table->text('Description')->nullable();
-            $table->string('FilePath');
-            $table->enum('MaterialType', ['pdf', 'video', 'notes', 'other']);
+            $table->string('FilePath')->nullable();
+            $table->string('VideoPath')->nullable();
+            $table->enum('MaterialType', ['pdf', 'video', 'text']);
             $table->foreignId('CourseID')->constrained('courses', 'CourseID')->onDelete('cascade');
             $table->foreignId('ProfessorID')->constrained('users', 'id')->onDelete('cascade');
             $table->timestamps();
