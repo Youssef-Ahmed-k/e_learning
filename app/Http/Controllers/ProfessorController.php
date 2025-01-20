@@ -19,6 +19,15 @@ class ProfessorController extends Controller
         $this->middleware('role:professor');
     }
 
+    private function handleFileUpload(Request $request, $type, $oldPath = null)
+    {
+        if ($oldPath) {
+            Storage::delete($oldPath);
+        }
+
+        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos');
+    }
+
     // view all registered courses
     public function viewRegisteredCourses()
     {
