@@ -35,10 +35,24 @@ class StudentController extends Controller
     {
         try {
             // Validate the course ID directly from the URL parameter
-            if (!Course::where('CourseID', $courseID)->exists()) {
+            $course = Course::where('CourseID', $courseID)->first();
+
+            if (!$course) {
                 return response()->json([
                     'message' => 'Invalid course ID',
                 ], 404);
+            }
+
+            // Check if the authenticated student is enrolled in the course
+            $studentID = auth()->id();
+            $isEnrolled = CourseRegistration::where('CourseID', $courseID)
+                ->where('StudentID', $studentID)
+                ->exists();
+
+            if (!$isEnrolled) {
+                return response()->json([
+                    'message' => 'You are not enrolled in this course',
+                ], 403);
             }
 
             // Fetch course materials
