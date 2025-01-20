@@ -21,16 +21,39 @@ class UploadCourseMaterialRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $fileRules = ['nullable', 'file', 'max:10240'];
 
+        if ($this->material_type === 'pdf') {
+            $fileRules[] = 'mimes:pdf,docx,txt,ppt,pptx';
+        } elseif ($this->material_type === 'video') {
+            $fileRules[] = 'mimes:mp4';
+        }
+
+        return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
-            'file' => 'nullable|file|mimes:pdf,docx,txt|max:10240',
-            'video' => 'nullable|file|mimes:mp4|max:10240',
+            'file' => $fileRules, // Dynamically set file rules based on material_type
+            'video' => ['nullable', 'file', 'mimes:mp4', 'max:10240'], // Video validation stays as it is
             'material_type' => 'required|string|in:pdf,video,text',
             'course_id' => 'required|integer|exists:courses,CourseID',
-
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if ($this->material_type === 'pdf') {
+                if (!$this->hasFile('file')) {
+                    $validator->errors()->add('file', 'You must upload a file when the material type is pdf.');
+                }
+            }
+
+            if ($this->material_type === 'video') {
+                if (!$this->hasFile('video')) {
+                    $validator->errors()->add('video', 'You must upload a video when the material type is video.');
+                }
+            }
+        });
     }
 
     public function messages()
@@ -38,6 +61,7 @@ class UploadCourseMaterialRequest extends FormRequest
         return [
             'title.required' => 'The title is required.',
             'material_type.in' => 'The material type must be pdf, video, or text.',
+            'file.mimes' => 'The file must be one of the following types: pdf, docx, txt, ppt, pptx.',
         ];
     }
 }
