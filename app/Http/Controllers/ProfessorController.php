@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateCourseMaterialRequest;
 use App\Models\Course;
 
 use App\Models\Material;
@@ -47,6 +48,26 @@ class ProfessorController extends Controller
 
         DB::beginTransaction();
         try {
+            // Ensure the course belongs to the authenticated professor
+            $course = Course::where('CourseID', $request->course_id)
+                ->where('ProfessorID', auth()->id())
+                ->first();
+
+            if (!$course) {
+                return response()->json([
+                    'message' => 'You are not authorized to upload materials for this course.',
+                ], 403);
+            }
+
+            // Validate material type and uploaded file
+            if ($request->material_type === 'pdf' && !$request->hasFile('file')) {
+                return response()->json(['message' => 'You must upload a file for PDF materials.'], 400);
+            }
+
+            if ($request->material_type === 'video' && !$request->hasFile('video')) {
+                return response()->json(['message' => 'You must upload a video for video materials.'], 400);
+            }
+
             $filePath = $request->hasFile('file') ? $this->handleFileUpload($request, 'file') : null;
             $videoPath = $request->hasFile('video') ? $this->handleFileUpload($request, 'video') : null;
 
@@ -64,7 +85,7 @@ class ProfessorController extends Controller
             return response()->json(['message' => 'Course material uploaded successfully', 'data' => $material], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Upload course material error',
+                'message' => 'Upload course material failed',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -99,79 +120,42 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
-    public function updateCourseMaterial(Request $request, $material_id)
+    public function updateCourseMaterial(UpdateCourseMaterialRequest  $request, $material_id)
     {
         try {
-            // Validate material_id exists
             $material = Material::findOrFail($material_id);
 
-            // Check if the authenticated professor is the owner of the material
             if ($material->ProfessorID !== auth()->id()) {
-                return response()->json([
-                    'message' => 'You are not authorized to update this material.',
-                ], 403);
+                return response()->json(['message' => 'You are not authorized to update this material.'], 403);
             }
 
-            // Validate input fields
-            $request->validate([
-                'title' => 'sometimes|string|max:255',
-                'description' => 'sometimes|string|max:255',
-                'file' => 'sometimes|file|mimes:pdf,docx,txt|max:10240',
-                'video' => 'sometimes|file|mimes:mp4|max:10240',
-                'material_type' => 'sometimes|string|max:50',
-            ]);
-
-            // Ensure only one file or video is provided if both are present
             if ($request->hasFile('file') && $request->hasFile('video')) {
-                return response()->json([
-                    'message' => 'You can only upload either a file or a video, not both.',
-                ], 400);
+                return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
             }
 
-            // Update fields if present in the request
-            if ($request->has('title')) {
-                $material->Title = $request->title;
-            }
-            if ($request->has('description')) {
-                $material->Description = $request->description;
-            }
-            if ($request->has('file')) {
-                // Delete the old file from storage
-                Storage::delete($material->FilePath);
+            DB::beginTransaction();
 
-                // Store the new file
-                $filePath = $request->file('file')->store('course_materials');
-                $material->FilePath = $filePath;
-
-                // Remove the old video path if a new file is uploaded
+            if ($request->hasFile('file')) {
+                $material->FilePath = $this->handleFileUpload($request, 'file', $material->FilePath);
                 $material->VideoPath = null;
             }
-            if ($request->has('video')) {
-                // Delete the old video from storage
-                Storage::delete($material->VideoPath);
 
-                // Store the new video
-                $videoPath = $request->file('video')->store('course_videos');
-                $material->VideoPath = $videoPath;
-
-                // Remove the old file path if a new video is uploaded
+            if ($request->hasFile('video')) {
+                $material->VideoPath = $this->handleFileUpload($request, 'video', $material->VideoPath);
                 $material->FilePath = null;
             }
-            if ($request->has('material_type')) {
-                $material->MaterialType = $request->material_type;
-            }
 
-            $material->save();
+            $material->update([
+                'Title' => $request->title ?? $material->Title,
+                'Description' => $request->description ?? $material->Description,
+                'MaterialType' => $request->material_type ?? $material->MaterialType,
+            ]);
 
-            return response()->json([
-                'message' => 'Course material updated successfully',
-                'data' => [
-                    'material' => $material,
-                ]
-            ], 200);
+            DB::commit();
+            return response()->json(['message' => 'Course material updated successfully', 'data' => $material], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong',
+                'message' => 'Update course material failed',
                 'error' => $e->getMessage(),
             ], 500);
         }
