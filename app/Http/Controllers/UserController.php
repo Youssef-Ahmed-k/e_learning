@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdatePassword;
 use App\Http\Requests\UpdateProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -58,4 +59,65 @@ class UserController extends Controller
             'message' => 'Password updated successfully. Please log in again.'
         ]);
     }
+    public function uploadProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            $user = auth()->user();
+
+            // Delete the old profile picture if it exists
+            if ($user->profile_picture) {
+                Storage::delete($user->profile_picture);
+            }
+
+            // Store the new profile picture
+            $filePath = $request->file('profile_picture')->store('profile_pictures');
+
+            // Update the user's profile picture path
+            $user->profile_picture = $filePath;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile picture uploaded successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to upload profile picture',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function deleteProfilePicture()
+    {
+        try {
+            $user = auth()->user();
+
+            // Check if the user has a profile picture
+            if (!$user->profile_picture) {
+                return response()->json([
+                    'message' => 'No profile picture to delete',
+                ], 404);
+            }
+
+            // Delete the profile picture from storage
+            Storage::delete($user->profile_picture);
+
+            // Remove the profile picture path from the user's record
+            $user->profile_picture = null;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile picture deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete profile picture',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }
