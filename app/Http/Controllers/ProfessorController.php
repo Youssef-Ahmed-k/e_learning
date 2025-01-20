@@ -7,9 +7,11 @@ use App\Models\Course;
 use App\Models\Material;
 use App\Http\Requests\UploadMaterial;
 use App\Http\Requests\UpdateMaterial;
+use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProfessorController extends Controller
 {
@@ -37,36 +39,16 @@ class ProfessorController extends Controller
 
         return response()->json(['data' => $courses]);
     }
-    public function uploadCourseMaterial(UploadMaterial $request)
+    public function uploadCourseMaterial(UploadCourseMaterialRequest  $request)
     {
+        if ($request->hasFile('file') && $request->hasFile('video')) {
+            return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
+        }
+
+        DB::beginTransaction();
         try {
-            // Validate input fields
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string|max:255',
-                'file' => 'nullable|file|mimes:pdf,docx,txt|max:10240',
-                'video' => 'nullable|file|mimes:mp4|max:10240',
-                'material_type' => 'required|string|max:50',
-                'course_id' => 'required|integer|exists:courses,CourseID',
-            ]);
-
-            // Ensure only one file or video is provided if both are present
-            if ($request->hasFile('file') && $request->hasFile('video')) {
-                return response()->json([
-                    'message' => 'You can only upload either a file or a video, not both.',
-                ], 400);
-            }
-
-            // Store the file or video
-            $filePath = null;
-            $videoPath = null;
-
-            if ($request->hasFile('file')) {
-                $filePath = $request->file('file')->store('course_materials');
-            }
-            if ($request->hasFile('video')) {
-                $videoPath = $request->file('video')->store('course_videos');
-            }
+            $filePath = $request->hasFile('file') ? $this->handleFileUpload($request, 'file') : null;
+            $videoPath = $request->hasFile('video') ? $this->handleFileUpload($request, 'video') : null;
 
             $material = Material::create([
                 'Title' => $request->title,
@@ -78,15 +60,11 @@ class ProfessorController extends Controller
                 'ProfessorID' => auth()->id(),
             ]);
 
-            return response()->json([
-                'message' => 'Course material uploaded successfully',
-                'data' => [
-                    'material' => $material,
-                ]
-            ], 201);
+            DB::commit();
+            return response()->json(['message' => 'Course material uploaded successfully', 'data' => $material], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong',
+                'message' => 'Upload course material error',
                 'error' => $e->getMessage(),
             ], 500);
         }
