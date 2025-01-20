@@ -31,9 +31,9 @@ class UploadCourseMaterialRequest extends FormRequest
 
         return [
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string|max:255',
-            'file' => $fileRules, // Dynamically set file rules based on material_type
-            'video' => ['nullable', 'file', 'mimes:mp4', 'max:10240'], // Video validation stays as it is
+            'description' => $this->material_type === 'text' ? 'required|string|max:255' : 'nullable|string|max:255',
+            'file' => $this->material_type !== 'text' ? $fileRules : 'nullable',
+            'video' => $this->material_type !== 'text' ? ['nullable', 'file', 'mimes:mp4', 'max:10240'] : 'nullable',
             'material_type' => 'required|string|in:pdf,video,text',
             'course_id' => 'required|integer|exists:courses,CourseID',
         ];
