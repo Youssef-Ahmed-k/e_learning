@@ -102,8 +102,12 @@ class ProfessorController extends Controller
             }
 
             // Delete the material file and video from storage
-            Storage::delete($material->FilePath);
-            Storage::delete($material->VideoPath);
+            if ($material->FilePath) {
+                Storage::delete($material->FilePath);
+            }
+            if ($material->VideoPath) {
+                Storage::delete($material->VideoPath);
+            }
 
             // Delete the material record from the database
             $material->delete();
