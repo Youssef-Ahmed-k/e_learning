@@ -90,5 +90,34 @@ class UserController extends Controller
             ], 500);
         }
     }
+    public function deleteProfilePicture()
+    {
+        try {
+            $user = auth()->user();
+
+            // Check if the user has a profile picture
+            if (!$user->profile_picture) {
+                return response()->json([
+                    'message' => 'No profile picture to delete',
+                ], 404);
+            }
+
+            // Delete the profile picture from storage
+            Storage::delete($user->profile_picture);
+
+            // Remove the profile picture path from the user's record
+            $user->profile_picture = null;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile picture deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete profile picture',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
 }
