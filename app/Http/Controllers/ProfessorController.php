@@ -120,6 +120,11 @@ class ProfessorController extends Controller
     }
     public function updateCourseMaterial(UpdateCourseMaterialRequest  $request, $material_id)
     {
+        if ($request->hasFile('file') && $request->hasFile('video')) {
+            return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
+        }
+
+        DB::beginTransaction();
         try {
             $material = Material::findOrFail($material_id);
 
@@ -127,11 +132,13 @@ class ProfessorController extends Controller
                 return response()->json(['message' => 'You are not authorized to update this material.'], 403);
             }
 
-            if ($request->hasFile('file') && $request->hasFile('video')) {
-                return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
+            if ($request->material_type === 'pdf' && !$request->hasFile('file')) {
+                return response()->json(['message' => 'You must upload a file for PDF materials.'], 400);
             }
 
-            DB::beginTransaction();
+            if ($request->material_type === 'video' && !$request->hasFile('video')) {
+                return response()->json(['message' => 'You must upload a video for video materials.'], 400);
+            }
 
             if ($request->hasFile('file')) {
                 $material->FilePath = $this->handleFileUpload($request, 'file', $material->FilePath);
@@ -152,6 +159,7 @@ class ProfessorController extends Controller
             DB::commit();
             return response()->json(['message' => 'Course material updated successfully', 'data' => $material], 200);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Update course material failed',
                 'error' => $e->getMessage(),
