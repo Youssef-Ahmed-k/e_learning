@@ -6,8 +6,6 @@ use App\Http\Requests\UpdateCourseMaterialRequest;
 use App\Models\Course;
 
 use App\Models\Material;
-use App\Http\Requests\UploadMaterial;
-use App\Http\Requests\UpdateMaterial;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
