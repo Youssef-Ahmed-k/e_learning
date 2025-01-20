@@ -33,6 +33,7 @@ Route::group([
     Route::post('profile',  [AuthController::class, 'me']);
     Route::patch('profile/update',  [UserController::class, 'updateProfile']);
     Route::patch('password/update',  [UserController::class, 'updatePassword']);
+    Route::post('upload-profile-picture', [UserController::class, 'uploadProfilePicture']);
 });
 
 Route::group([
