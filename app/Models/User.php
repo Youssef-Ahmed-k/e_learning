@@ -97,4 +97,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(CheatingLog::class, 'StudentID', 'id');
     }
+
+    public function isSuspended(): bool
+    {
+        return $this->is_suspended;
+    }
 }
