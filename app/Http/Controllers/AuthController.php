@@ -51,23 +51,34 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
-            return response()->json(['message' => 'Email or password is incorrect'], 401);
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+
+            if ($user->isSuspended()) {
+                Auth::logout();
+                return response()->json(['message' => 'Your account is suspended. Please contact the administrator.'], 403);
+            }
+
+            if (! $token = auth()->attempt($credentials)) {
+                return response()->json(['message' => 'Email or password is incorrect'], 401);
+            }
+
+            $user = auth()->user();
+
+            return response()->json([
+                'message' => 'Login successful',
+                'data' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => auth()->factory()->getTTL() * 60,
+                ],
+            ]);
         }
-
-        $user = auth()->user();
-
-        return response()->json([
-            'message' => 'Login successful',
-            'data' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => auth()->factory()->getTTL() * 60,
-            ],
-        ]);
+        
+        return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
     /**
