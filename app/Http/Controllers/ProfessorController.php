@@ -188,10 +188,14 @@ class ProfessorController extends Controller
             'is_suspended' => true,
         ]);
 
-        $student->suspensions()->create([
-            'Reason' => $request->reason,
-            'SuspendedAt' => now(),
-        ]);
+        if ($student->is_suspended) {
+            $student->suspensions()->create([
+                'Reason' => $request->reason,
+                'SuspendedAt' => now(),
+            ]);
+
+            return response()->json(['message' => 'Student suspended successfully'], 200);
+        }
 
         return response()->json(['message' => 'Student suspended successfully'], 200);
     }
@@ -209,5 +213,15 @@ class ProfessorController extends Controller
         ]);
 
         return response()->json(['message' => 'Student unsuspended successfully'], 200);
+    }
+
+    public function viewSuspendedStudents()
+    {
+        $suspendedStudents = User::where('role', 'user')
+            ->where('is_suspended', true)
+            ->with('suspensions')
+            ->get();
+
+        return response()->json(['data' => $suspendedStudents]);
     }
 }
