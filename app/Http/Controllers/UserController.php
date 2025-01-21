@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -14,6 +15,7 @@ class UserController extends Controller
     {
         $this->middleware('auth:api');
         $this->middleware('role:admin')->only('getAllUsers');
+        $this->middleware('role:admin,professor')->only('suspendStudent', 'unsuspendStudent', 'viewSuspendedStudents');
     }
 
     public function updateProfile(UpdateProfile $request)
@@ -126,10 +128,13 @@ class UserController extends Controller
             'reason' => 'required|string|max:255',
         ]);
 
-        $student = User::where('id', $studentId)->where('role', 'user')->first();
+        $currentUser = Auth::user();
 
-        if (!$student) {
-            return response()->json(['message' => 'Student not found'], 404);
+        // Retrieve the student or professor to be suspended
+        $student = User::where('id', $studentId)->first();
+
+        if (!$student || ($currentUser->role === 'professor' && $student->role !== 'user')) {
+            return response()->json(['message' => 'Unauthorized or Student not found'], 403);
         }
 
         $student->update([
@@ -150,10 +155,13 @@ class UserController extends Controller
 
     public function unsuspendStudent($studentId)
     {
-        $student = User::where('id', $studentId)->where('role', 'user')->first();
+        $currentUser = Auth::user();
 
-        if (!$student) {
-            return response()->json(['message' => 'Student not found'], 404);
+        // Retrieve the student or professor to be unsuspended
+        $student = User::where('id', $studentId)->first();
+
+        if (!$student || ($currentUser->role === 'professor' && $student->role !== 'user')) {
+            return response()->json(['message' => 'Unauthorized or Student not found'], 403);
         }
 
         $student->update([
@@ -165,10 +173,16 @@ class UserController extends Controller
 
     public function viewSuspendedStudents()
     {
-        $suspendedStudents = User::where('role', 'user')
-            ->where('is_suspended', true)
-            ->with('suspensions')
-            ->get();
+        $currentUser = Auth::user(); // Get the authenticated user
+
+        // Professors can view only suspended users
+        $query = User::where('is_suspended', true)->with('suspensions');
+
+        if ($currentUser->role === 'professor') {
+            $query->where('role', 'user');
+        }
+
+        $suspendedStudents = $query->get();
 
         return response()->json(['data' => $suspendedStudents]);
     }
