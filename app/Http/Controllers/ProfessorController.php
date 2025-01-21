@@ -196,5 +196,18 @@ class ProfessorController extends Controller
         return response()->json(['message' => 'Student suspended successfully'], 200);
     }
 
+    public function unsuspendStudent($studentId)
+    {
+        $student = User::where('id', $studentId)->where('role', 'user')->first();
 
+        if (!$student) {
+            return response()->json(['message' => 'Student not found'], 404);
+        }
+
+        $student->update([
+            'is_suspended' => false,
+        ]);
+
+        return response()->json(['message' => 'Student unsuspended successfully'], 200);
+    }
 }
