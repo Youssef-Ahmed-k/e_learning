@@ -9,6 +9,7 @@ use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -170,4 +171,30 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+
+    public function suspendStudent(Request $request, $studentId)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $student = User::where('id', $studentId)->where('role', 'user')->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'Student not found'], 404);
+        }
+
+        $student->update([
+            'is_suspended' => true,
+        ]);
+
+        $student->suspensions()->create([
+            'Reason' => $request->reason,
+            'SuspendedAt' => now(),
+        ]);
+
+        return response()->json(['message' => 'Student suspended successfully'], 200);
+    }
+
+
 }
