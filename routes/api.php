@@ -26,7 +26,7 @@ Route::group([
     'prefix' => 'auth'
 ], function ($router) {
 
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('check.suspension');
     Route::post('register',  [AuthController::class, 'register']);
     Route::post('logout',  [AuthController::class, 'logout']);
     Route::post('refresh',  [AuthController::class, 'refresh']);
@@ -84,4 +84,6 @@ Route::group([
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
+    Route::post('/students/{id}/suspend', [ProfessorController::class, 'suspendStudent']);
+    Route::post('/students/{id}/unsuspend', [ProfessorController::class, 'unsuspendStudent']);
 });
