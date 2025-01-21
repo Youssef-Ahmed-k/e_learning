@@ -9,6 +9,7 @@ use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 

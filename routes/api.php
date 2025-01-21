@@ -26,7 +26,7 @@ Route::group([
     'prefix' => 'auth'
 ], function ($router) {
 
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('check.suspension');
     Route::post('register',  [AuthController::class, 'register']);
     Route::post('logout',  [AuthController::class, 'logout']);
     Route::post('refresh',  [AuthController::class, 'refresh']);
@@ -35,6 +35,9 @@ Route::group([
     Route::patch('password/update',  [UserController::class, 'updatePassword']);
     Route::post('profile/upload-profile-picture', [UserController::class, 'uploadProfilePicture']);
     Route::delete('profile/delete-profile-picture', [UserController::class, 'deleteProfilePicture']);
+    Route::get('/students/suspend', [UserController::class, 'viewSuspendedStudents']);
+    Route::post('/students/{id}/suspend', [UserController::class, 'suspendStudent']);
+    Route::post('/students/{id}/unsuspend', [UserController::class, 'unsuspendStudent']);
 });
 
 Route::group([

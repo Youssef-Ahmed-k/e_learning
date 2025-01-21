@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -14,6 +15,7 @@ class UserController extends Controller
     {
         $this->middleware('auth:api');
         $this->middleware('role:admin')->only('getAllUsers');
+        $this->middleware('role:admin,professor')->only('suspendStudent', 'unsuspendStudent', 'viewSuspendedStudents');
     }
 
     public function updateProfile(UpdateProfile $request)
@@ -120,4 +122,68 @@ class UserController extends Controller
         }
     }
 
+    public function suspendStudent(Request $request, $studentId)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $currentUser = Auth::user();
+
+        // Retrieve the student or professor to be suspended
+        $student = User::where('id', $studentId)->first();
+
+        if (!$student || ($currentUser->role === 'professor' && $student->role !== 'user')) {
+            return response()->json(['message' => 'Unauthorized or Student not found'], 403);
+        }
+
+        $student->update([
+            'is_suspended' => true,
+        ]);
+
+        if ($student->is_suspended) {
+            $student->suspensions()->create([
+                'Reason' => $request->reason,
+                'SuspendedAt' => now(),
+            ]);
+
+            return response()->json(['message' => 'User suspended successfully'], 200);
+        }
+
+        return response()->json(['message' => 'Student suspended successfully'], 200);
+    }
+
+    public function unsuspendStudent($studentId)
+    {
+        $currentUser = Auth::user();
+
+        // Retrieve the student or professor to be unsuspended
+        $student = User::where('id', $studentId)->first();
+
+        if (!$student || ($currentUser->role === 'professor' && $student->role !== 'user')) {
+            return response()->json(['message' => 'Unauthorized or Student not found'], 403);
+        }
+
+        $student->update([
+            'is_suspended' => false,
+        ]);
+
+        return response()->json(['message' => 'User unsuspended successfully'], 200);
+    }
+
+    public function viewSuspendedStudents()
+    {
+        $currentUser = Auth::user(); // Get the authenticated user
+
+        // Professors can view only suspended users
+        $query = User::where('is_suspended', true)->with('suspensions');
+
+        if ($currentUser->role === 'professor') {
+            $query->where('role', 'user');
+        }
+
+        $suspendedStudents = $query->get();
+
+        return response()->json(['data' => $suspendedStudents]);
+    }
 }

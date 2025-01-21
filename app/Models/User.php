@@ -23,7 +23,8 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'phone',
-        'address'
+        'address',
+        'is_suspended',
     ];
 
     /**
@@ -96,5 +97,10 @@ class User extends Authenticatable implements JWTSubject
     public function cheatingLogs()
     {
         return $this->hasMany(CheatingLog::class, 'StudentID', 'id');
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->is_suspended;
     }
 }
