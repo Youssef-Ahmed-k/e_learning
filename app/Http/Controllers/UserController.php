@@ -147,7 +147,7 @@ class UserController extends Controller
                 'SuspendedAt' => now(),
             ]);
 
-            return response()->json(['message' => 'Student suspended successfully'], 200);
+            return response()->json(['message' => 'User suspended successfully'], 200);
         }
 
         return response()->json(['message' => 'Student suspended successfully'], 200);
@@ -168,7 +168,7 @@ class UserController extends Controller
             'is_suspended' => false,
         ]);
 
-        return response()->json(['message' => 'Student unsuspended successfully'], 200);
+        return response()->json(['message' => 'User unsuspended successfully'], 200);
     }
 
     public function viewSuspendedStudents()

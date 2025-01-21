@@ -35,6 +35,9 @@ Route::group([
     Route::patch('password/update',  [UserController::class, 'updatePassword']);
     Route::post('profile/upload-profile-picture', [UserController::class, 'uploadProfilePicture']);
     Route::delete('profile/delete-profile-picture', [UserController::class, 'deleteProfilePicture']);
+    Route::get('/students/suspend', [UserController::class, 'viewSuspendedStudents']);
+    Route::post('/students/{id}/suspend', [UserController::class, 'suspendStudent']);
+    Route::post('/students/{id}/unsuspend', [UserController::class, 'unsuspendStudent']);
 });
 
 Route::group([
@@ -84,7 +87,4 @@ Route::group([
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
-    Route::get('/students/suspend', [ProfessorController::class, 'viewSuspendedStudents']);
-    Route::post('/students/{id}/suspend', [ProfessorController::class, 'suspendStudent']);
-    Route::post('/students/{id}/unsuspend', [ProfessorController::class, 'unsuspendStudent']);
 });
