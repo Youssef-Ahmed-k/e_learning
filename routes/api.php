@@ -38,6 +38,8 @@ Route::group([
     Route::get('/students/suspend', [UserController::class, 'viewSuspendedStudents']);
     Route::post('/students/{id}/suspend', [UserController::class, 'suspendStudent']);
     Route::post('/students/{id}/unsuspend', [UserController::class, 'unsuspendStudent']);
+    Route::post('forgot-password', [AuthController::class, 'sendResetLinkEmail']);
+    Route::post('reset-password', [AuthController::class, 'resetPassword']);
 });
 
 Route::group([
