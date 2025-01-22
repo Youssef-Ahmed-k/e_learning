@@ -6,12 +6,18 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Register;
 use App\Http\Requests\UpdatePassword;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\UpdateProfile;
 use App\Models\User;
+use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\ResetPasswordverificationNOtification;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
+    protected $otp;
     /**
      * Create a new AuthController instance.
      *
@@ -19,7 +25,9 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        $otp = new Otp();
+        $this->otp = $otp;
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'sendResetLinkEmail', 'resetPassword']]);
     }
 
     public function register(Register $request)
@@ -128,4 +136,46 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 99999
         ]);
     }
+    public function sendResetLinkEmail(ForgotPasswordRequest $request)
+    {
+        try {
+            $input = $request->only('email');
+            $user = User::where('email', $input['email'])->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+
+            $user->notify(new ResetPasswordverificationNOtification());
+            $success['success'] = 'A reset password link has been sent to your email address.';
+            return response()->json($success, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        try {
+            $otp = $this->otp->validate($request->email, $request->otp);
+
+            if (!$otp->status) {
+                return response()->json(['message' => 'Invalid OTP provided'], 400);
+            }
+
+            $user = User::where('email', $request->email)->first();
+            $user->password = $request->password;
+            $user->save();
+
+            return response()->json(['message' => 'Password has been successfully changed']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
 }
