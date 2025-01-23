@@ -7,10 +7,12 @@
     "require": {
         "php": "^8.1",
         "guzzlehttp/guzzle": "^7.2",
+        "ichtrojan/laravel-otp": "^2.0",
         "laravel-lang/common": "^6.4",
         "laravel/framework": "^10.0",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "nesbot/carbon": "^2.72",
         "tymon/jwt-auth": "^2.1"
     },
     "require-dev": {
