@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('otps', function (Blueprint $table) {
             $table->id();
-            $table->identifier();
-            $table->token();
-            $table->validity();
-            $table->valid();
+            $table->string('identifier'); 
+            $table->string('token'); 
+            $table->integer('validity'); 
+            $table->boolean('valid')->default(true);
             $table->timestamps();
         });
     }
