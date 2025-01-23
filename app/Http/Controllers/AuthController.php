@@ -14,6 +14,7 @@ use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\ResetPasswordverificationNOtification;
 use Illuminate\Support\Facades\Password;
+use phpDocumentor\Reflection\PseudoTypes\True_;
 
 class AuthController extends Controller
 {
@@ -138,24 +139,23 @@ class AuthController extends Controller
     }
     public function sendResetLinkEmail(ForgotPasswordRequest $request)
     {
-        try {
-            $input = $request->only('email');
-            $user = User::where('email', $input['email'])->first();
+    try {
+        $input = $request->only('email');
+        $user = User::where('email', $input['email'])->first();
 
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
+        if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+        }
 
-            $user->notify(new ResetPasswordverificationNOtification());
-            $success['success'] = 'A reset password link has been sent to your email address.';
-            return response()->json($success, 200);
+        $user->notify(new ResetPasswordverificationNOtification());
+        return response()->json(['message' => 'Reset password link sent to your email.']);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Something went wrong',
-                'error' => $e->getMessage(),
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage(),
             ], 500);
         }
-    }
+}
     public function resetPassword(ResetPasswordRequest $request)
     {
         try {
