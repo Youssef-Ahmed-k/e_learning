@@ -106,7 +106,7 @@ class UserController extends Controller
             }
 
             // Delete the profile picture from storage
-            Storage::delete($user->profile_picture);
+            Storage::disk('public')->delete($user->profile_picture);
 
             // Remove the profile picture path from the user's record
             $user->profile_picture = null;
