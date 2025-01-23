@@ -82,7 +82,7 @@ class AuthController extends Controller
                     'role' => $user->role,
                     'token' => $token,
                     'token_type' => 'bearer',
-                    'expires_in' => auth()->factory()->getTTL() * 60,
+                    'expires_in' => auth()->factory()->getTTL() * 999999,
                 ],
             ]);
         }
@@ -132,9 +132,9 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         return response()->json([
-            'access_token' => $token,
+            'token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 99999
+            'expires_in' => auth()->factory()->getTTL() * 60
         ]);
     }
     public function sendResetLinkEmail(ForgotPasswordRequest $request)
