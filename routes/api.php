@@ -9,6 +9,7 @@ use App\Http\Controllers\CourseRegistrationController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\QuizController;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,4 +90,12 @@ Route::group([
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'Quiz'
+], function ($router) {
+    Route::post('create-quiz', [QuizController::class, 'createQuiz']);
+
 });
