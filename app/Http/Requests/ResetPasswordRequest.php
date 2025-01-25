@@ -24,8 +24,8 @@ class ResetPasswordRequest extends FormRequest
         return [
             'email' => 'required|email|exists:users,email',
             'otp' => 'required|max:4',
-            'password' => 'required|string|min:8|confirmed',
-         ];
+            'password' => 'required|min:6|max:20|confirmed|regex:/[A-Z]/|regex:/[0-9]/',,
+        ];
     }
 
     /**
@@ -42,9 +42,9 @@ class ResetPasswordRequest extends FormRequest
             'otp.required' => 'The token field is required.',
             'otp.max' => 'The otp must be a 4 numbers.',
             'password.required' => 'The password field is required.',
-            'password.string' => 'The password must be a string.',
-            'password.min' => 'The password must be at least 8 characters.',
-            'password.confirmed' => 'The password confirmation does not match.',
+            'password.min' => 'The password must be at least 6 characters.',
+            'password.regex' => 'The password must contain at least one uppercase letter and one number.',
+            'password.confirmed' => 'Password confirmation does not match.',
         ];
     }
 }
