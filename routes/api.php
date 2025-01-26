@@ -97,5 +97,6 @@ Route::group([
     'prefix' => 'quiz'
 ], function ($router) {
     Route::post('create-quiz', [QuizController::class, 'createQuiz']);
+    Route::patch('update-quiz/{id}', [QuizController::class, 'updateQuiz']);
     Route::post('add-question', [QuizController::class, 'addQuestion']);
 });
