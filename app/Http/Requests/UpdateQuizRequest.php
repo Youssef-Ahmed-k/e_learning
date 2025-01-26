@@ -22,12 +22,12 @@ class UpdateQuizRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'quiz_date' => 'required|date',
-            'course_id' => 'required|exists:courses,CourseID',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i|after:start_time',
+            'quiz_date' => 'nullable|date',
+            'course_id' => 'nullable|exists:courses,CourseID',
         ];
     }
 
