@@ -98,5 +98,6 @@ Route::group([
 ], function ($router) {
     Route::post('create-quiz', [QuizController::class, 'createQuiz']);
     Route::patch('update-quiz/{id}', [QuizController::class, 'updateQuiz']);
+    Route::delete('delete-quiz/{id}', [QuizController::class, 'deleteQuiz']);
     Route::post('add-question', [QuizController::class, 'addQuestion']);
 });
