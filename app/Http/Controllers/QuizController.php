@@ -142,7 +142,7 @@ class QuizController extends Controller
 
             $question->save();
 
-
+            $this->saveAnswers($validated, $question);
 
             DB::commit();
 
