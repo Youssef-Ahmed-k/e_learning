@@ -33,9 +33,9 @@ class QuizController extends Controller
         $lockdownEnabled = $currentTime >= $startTime && $currentTime <= $endTime;
 
         // Convert start and end time to Y-m-d H:i:s format
-         $startDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
-         $endDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
-        
+        $startDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
+        $endDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
+
         try {
             $quiz = Quiz::create([
                 'Title' => $validated['title'],
@@ -98,6 +98,22 @@ class QuizController extends Controller
     public function addQuestion(AddQuestionRequest $request)
     {
         $validated = $request->validated();
+
+        // Convert correct_option to boolean for true_false type
+        if ($validated['type'] === 'true_false') {
+            $validated['correct_option'] = filter_var(
+                strtolower($validated['correct_option']),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+
+            // Ensure the correct_option is a valid boolean
+            if ($validated['correct_option'] === null) {
+                return response()->json([
+                    'message' => 'Invalid correct_option value for true/false question.',
+                ], 422);
+            }
+        }
 
         DB::beginTransaction();
         try {
