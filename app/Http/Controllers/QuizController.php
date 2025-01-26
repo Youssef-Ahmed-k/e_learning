@@ -57,33 +57,45 @@ class QuizController extends Controller
     {
         $validated = $request->validated();
 
-        // Calculate the duration automatically from start and end time
-        $startTime = strtotime($validated['start_time']);
-        $endTime = strtotime($validated['end_time']);
-        $duration = ($endTime - $startTime) / 60; // Convert duration to minutes
-
-        // Convert start and end time to Y-m-d H:i:s format
-        $startDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
-        $endDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
-
         try {
             $quiz = Quiz::findOrFail($id);
-            $quiz->update([
-                'Title' => $validated['title'],
-                'Description' => $validated['description'],
-                'Duration' => $duration,
-                'StartTime' => $startDateTime,
-                'EndTime' => $endDateTime,
-                'QuizDate' => $validated['quiz_date'],
-                'LockdownEnabled' => false, // Default value, can be updated later if needed
-                'CourseID' => $validated['course_id'],
-            ]);
 
-            return response()->json(['message' => 'Quiz updated successfully'], 200);
+            // Prepare fields to update
+            $updates = [];
+
+            if (isset($validated['title'])) {
+                $updates['Title'] = $validated['title'];
+            }
+
+            if (isset($validated['description'])) {
+                $updates['Description'] = $validated['description'];
+            }
+
+            if (isset($validated['quiz_date']) && isset($validated['start_time']) && isset($validated['end_time'])) {
+                // Calculate the duration automatically from start and end time
+                $startTime = strtotime($validated['start_time']);
+                $endTime = strtotime($validated['end_time']);
+                $duration = ($endTime - $startTime) / 60;
+
+                $updates['Duration'] = $duration;
+                $updates['StartTime'] = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
+                $updates['EndTime'] = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
+                $updates['QuizDate'] = $validated['quiz_date'];
+            }
+
+            if (isset($validated['course_id'])) {
+                $updates['CourseID'] = $validated['course_id'];
+            }
+
+            // Update the quiz with the prepared fields
+            $quiz->update($updates);
+
+            return response()->json(['message' => 'Quiz updated successfully', 'data' => $quiz], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+
     public function deleteQuiz($id)
     {
         try {
