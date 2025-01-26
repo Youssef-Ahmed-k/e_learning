@@ -142,36 +142,7 @@ class QuizController extends Controller
 
             $question->save();
 
-            switch ($validated['type']) {
-                case 'mcq':
-                    foreach ($validated['options'] as $option) {
-                        $answer = new Answer([
-                            'AnswerText' => $option,
-                            'IsCorrect' => $option === $validated['correct_option'],
-                            'QuestionID' => $question->QuestionID,
-                        ]);
-                        $answer->save();
-                    }
-                    break;
 
-                case 'true_false':
-                    $answer = new Answer([
-                        'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
-                        'IsCorrect' => true,
-                        'QuestionID' => $question->QuestionID,
-                    ]);
-                    $answer->save();
-                    break;
-
-                case 'short_answer':
-                    $answer = new Answer([
-                        'AnswerText' => $validated['correct_option'],
-                        'IsCorrect' => true,
-                        'QuestionID' => $question->QuestionID,
-                    ]);
-                    $answer->save();
-                    break;
-            }
 
             DB::commit();
 
@@ -179,6 +150,40 @@ class QuizController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    protected function saveAnswers($validated, $question)
+    {
+        switch ($validated['type']) {
+            case 'mcq':
+                foreach ($validated['options'] as $option) {
+                    $answer = new Answer([
+                        'AnswerText' => $option,
+                        'IsCorrect' => $option === $validated['correct_option'],
+                        'QuestionID' => $question->QuestionID,
+                    ]);
+                    $answer->save();
+                }
+                break;
+
+            case 'true_false':
+                $answer = new Answer([
+                    'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
+                    'IsCorrect' => true,
+                    'QuestionID' => $question->QuestionID,
+                ]);
+                $answer->save();
+                break;
+
+            case 'short_answer':
+                $answer = new Answer([
+                    'AnswerText' => $validated['correct_option'],
+                    'IsCorrect' => true,
+                    'QuestionID' => $question->QuestionID,
+                ]);
+                $answer->save();
+                break;
         }
     }
 }
