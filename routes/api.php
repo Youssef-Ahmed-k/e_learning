@@ -94,8 +94,8 @@ Route::group([
 
 Route::group([
     'middleware' => 'api',
-    'prefix' => 'Quiz'
+    'prefix' => 'quiz'
 ], function ($router) {
     Route::post('create-quiz', [QuizController::class, 'createQuiz']);
-
+    Route::post('add-question', [QuizController::class, 'addQuestion']);
 });
