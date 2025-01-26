@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\AddQuestionRequest;
 use App\Http\Requests\UpdateQuizRequest;
+use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Answer;
@@ -164,6 +165,69 @@ class QuizController extends Controller
         }
     }
 
+    public function updateQuestion(UpdateQuestionRequest $request, $id)
+    {
+        $validated = $request->validated();
+
+        // Convert correct_option to boolean for true_false type
+        if (isset($validated['type']) && $validated['type'] === 'true_false') {
+            $validated['correct_option'] = filter_var(
+                strtolower($validated['correct_option']),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+
+            // Ensure the correct_option is a valid boolean
+            if ($validated['correct_option'] === null) {
+                return response()->json([
+                    'message' => 'Invalid correct_option value for true/false question.',
+                ], 422);
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            $question = Question::findOrFail($id);
+
+            // Prepare fields to update
+            $updates = [];
+
+            if (isset($validated['content'])) {
+                $updates['Content'] = $validated['content'];
+            }
+
+            if (isset($validated['type'])) {
+                $updates['Type'] = $validated['type'];
+            }
+
+            if (isset($validated['marks'])) {
+                $updates['Marks'] = $validated['marks'];
+            }
+
+            if (isset($validated['quiz_id'])) {
+                $updates['QuizID'] = $validated['quiz_id'];
+            }
+
+            if ($request->hasFile('image')) {
+                $updates['image'] = $request->file('image')->store('question_images');
+            }
+
+            $question->update($updates);
+
+            // Update the answers if necessary
+            if (isset($validated['correct_option']) || isset($validated['options'])) {
+                $this->updateAnswers($validated, $question);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Question updated successfully', 'question' => $question], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     protected function saveAnswers($validated, $question)
     {
         switch ($validated['type']) {
@@ -196,5 +260,14 @@ class QuizController extends Controller
                 $answer->save();
                 break;
         }
+    }
+
+    protected function updateAnswers($validated, $question)
+    {
+        // Delete existing answers
+        Answer::where('QuestionID', $question->QuestionID)->delete();
+
+        // Save new answers
+        $this->saveAnswers($validated, $question);
     }
 }
