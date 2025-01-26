@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\AddQuestionRequest;
+use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Answer;
@@ -48,6 +49,37 @@ class QuizController extends Controller
             ]);
 
             return response()->json(['message' => 'Quiz created successfully'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function updateQuiz(UpdateQuizRequest $request, $id)
+    {
+        $validated = $request->validated();
+
+        // Calculate the duration automatically from start and end time
+        $startTime = strtotime($validated['start_time']);
+        $endTime = strtotime($validated['end_time']);
+        $duration = ($endTime - $startTime) / 60; // Convert duration to minutes
+
+        // Convert start and end time to Y-m-d H:i:s format
+        $startDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
+        $endDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
+
+        try {
+            $quiz = Quiz::findOrFail($id);
+            $quiz->update([
+                'Title' => $validated['title'],
+                'Description' => $validated['description'],
+                'Duration' => $duration,
+                'StartTime' => $startDateTime,
+                'EndTime' => $endDateTime,
+                'QuizDate' => $validated['quiz_date'],
+                'LockdownEnabled' => false, // Default value, can be updated later if needed
+                'CourseID' => $validated['course_id'],
+            ]);
+
+            return response()->json(['message' => 'Quiz updated successfully'], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
