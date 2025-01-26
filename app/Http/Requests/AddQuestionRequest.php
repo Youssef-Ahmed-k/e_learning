@@ -24,11 +24,11 @@ class AddQuestionRequest extends FormRequest
         return [
             'quiz_id' => 'required|exists:quizzes,QuizID',
             'content' => 'required|string',
-            'type' => 'required|string|in:multiple_choice,true_false,short_answer',
+            'type' => 'required|string|in:mcq,true_false,short_answer',
             'marks' => 'required|integer',
             'options' => 'required_if:type,multiple_choice|array',
             'options.*' => 'required_if:type,multiple_choice|string',
-            'correct_option' => 'required_if:type,multiple_choice|string|required_if:type,true_false|boolean|required_if:type,short_answer|string',
+            'correct_option' => 'required_if:type,mcq|string|required_if:type,true_false|boolean|required_if:type,short_answer|string',
             'image' => 'nullable|image',
         ];
     }

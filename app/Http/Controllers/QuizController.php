@@ -114,29 +114,35 @@ class QuizController extends Controller
 
             $question->save();
 
-            if ($validated['type'] === 'multiple_choice') {
-                foreach ($validated['options'] as $option) {
+            switch ($validated['type']) {
+                case 'mcq':
+                    foreach ($validated['options'] as $option) {
+                        $answer = new Answer([
+                            'AnswerText' => $option,
+                            'IsCorrect' => $option === $validated['correct_option'],
+                            'QuestionID' => $question->QuestionID,
+                        ]);
+                        $answer->save();
+                    }
+                    break;
+
+                case 'true_false':
                     $answer = new Answer([
-                        'AnswerText' => $option,
-                        'IsCorrect' => $option === $validated['correct_option'],
+                        'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
+                        'IsCorrect' => true,
                         'QuestionID' => $question->QuestionID,
                     ]);
                     $answer->save();
-                }
-            } elseif ($validated['type'] === 'true_false') {
-                $answer = new Answer([
-                    'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
-                    'IsCorrect' => true,
-                    'QuestionID' => $question->QuestionID,
-                ]);
-                $answer->save();
-            } elseif ($validated['type'] === 'short_answer') {
-                $answer = new Answer([
-                    'AnswerText' => $validated['correct_option'],
-                    'IsCorrect' => true,
-                    'QuestionID' => $question->QuestionID,
-                ]);
-                $answer->save();
+                    break;
+
+                case 'short_answer':
+                    $answer = new Answer([
+                        'AnswerText' => $validated['correct_option'],
+                        'IsCorrect' => true,
+                        'QuestionID' => $question->QuestionID,
+                    ]);
+                    $answer->save();
+                    break;
             }
 
             DB::commit();
