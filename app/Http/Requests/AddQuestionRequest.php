@@ -30,7 +30,7 @@ class AddQuestionRequest extends FormRequest
             'options.*' => 'required_if:type,mcq|string',
             'correct_option' => [
                 'required_if:type,mcq|string',
-                'required_if:type,true_false|boolean',
+                'required_if:type,true_false|in:true,false,1,0',
                 'required_if:type,short_answer|string',
             ],
             'image' => 'nullable|image',
@@ -49,6 +49,7 @@ class AddQuestionRequest extends FormRequest
             'options.required_if' => 'The options field is required for multiple choice questions.',
             'options.*.required_if' => 'Each option is required for multiple choice questions.',
             'correct_option.required_if' => 'The correct option field is required for multiple choice, true/false, and short answer questions.',
+            'correct_option.in' => 'The correct option must be true, false, 1, or 0 for true/false questions.',
             'image.image' => 'The image must be an image file.',
         ];
     }
