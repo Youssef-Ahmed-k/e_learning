@@ -84,6 +84,17 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    public function deleteQuiz($id)
+    {
+        try {
+            $quiz = Quiz::findOrFail($id);
+            $quiz->delete();
+
+            return response()->json(['message' => 'Quiz deleted successfully'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
     public function addQuestion(AddQuestionRequest $request)
     {
         $validated = $request->validated();
