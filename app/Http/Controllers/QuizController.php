@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Answer;
+use App\Models\Course;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -103,6 +104,29 @@ class QuizController extends Controller
             $quiz->update($updates);
 
             return response()->json(['message' => 'Quiz updated successfully', 'data' => $quiz], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function getCourseQuizzes($courseId)
+    {
+        try {
+            $professorId = auth()->user()->id;
+
+            // Check if the professor is part of the course
+            $course = Course::where('CourseID', $courseId)
+                            ->where('ProfessorID', $professorId)
+                            ->first();
+
+            if (!$course) {
+                return response()->json(['message' => 'Professor not part of the course'], 403);
+            }
+
+            // Get quizzes created by the professor in the course
+            $quizzes = Quiz::where('CourseID', $courseId)
+                           ->pluck('Title');
+
+            return response()->json(['quizzes' => $quizzes], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
@@ -291,4 +315,5 @@ class QuizController extends Controller
         // Save new answers
         $this->saveAnswers($validated, $question);
     }
+   
 }
