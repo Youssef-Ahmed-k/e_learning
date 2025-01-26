@@ -101,4 +101,5 @@ Route::group([
     Route::delete('delete-quiz/{id}', [QuizController::class, 'deleteQuiz']);
     Route::post('add-question', [QuizController::class, 'addQuestion']);
     Route::patch('update-question/{id}', [QuizController::class, 'updateQuestion']);
+    Route::delete('delete-question/{id}', [QuizController::class, 'deleteQuestion']);
 });
