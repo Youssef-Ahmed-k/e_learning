@@ -26,9 +26,13 @@ class AddQuestionRequest extends FormRequest
             'content' => 'required|string',
             'type' => 'required|string|in:mcq,true_false,short_answer',
             'marks' => 'required|integer',
-            'options' => 'required_if:type,multiple_choice|array',
-            'options.*' => 'required_if:type,multiple_choice|string',
-            'correct_option' => 'required_if:type,mcq|string|required_if:type,true_false|boolean|required_if:type,short_answer|string',
+            'options' => 'required_if:type,mcq|array',
+            'options.*' => 'required_if:type,mcq|string',
+            'correct_option' => [
+                'required_if:type,mcq|string',
+                'required_if:type,true_false|boolean',
+                'required_if:type,short_answer|string',
+            ],
             'image' => 'nullable|image',
         ];
     }
