@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Answer;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,30 +20,39 @@ class QuizController extends Controller
         $this->middleware('auth:api');
         $this->middleware('role:professor');
     }
+
+    // Helper method to handle date and time logic
+    protected function formatQuizDateTime($quizDate, $startTime, $endTime)
+    {
+        return [
+            'start' => Carbon::parse("$quizDate $startTime")->format('Y-m-d H:i:s'),
+            'end' => Carbon::parse("$quizDate $endTime")->format('Y-m-d H:i:s'),
+        ];
+    }
+
     public function createQuiz(CreateQuizRequest $request)
     {
         $validated = $request->validated();
 
         // Calculate the duration automatically from start and end time
-        $startTime = strtotime($validated['start_time']);
-        $endTime = strtotime($validated['end_time']);
-        $duration = ($endTime - $startTime) / 60; // Convert duration to minutes
+        $startTime = Carbon::parse($validated['start_time']);
+        $endTime = Carbon::parse($validated['end_time']);
+        $duration = $endTime->diffInMinutes($startTime);
 
         // Check if the current time is within the specified lockdown period
-        $currentTime = time();
-        $lockdownEnabled = $currentTime >= $startTime && $currentTime <= $endTime;
+        $lockdownEnabled = Carbon::now()->between($startTime, $endTime);
 
         // Convert start and end time to Y-m-d H:i:s format
-        $startDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
-        $endDateTime = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
+        $dates = $this->formatQuizDateTime($validated['quiz_date'], $validated['start_time'], $validated['end_time']);
+
 
         try {
             $quiz = Quiz::create([
                 'Title' => $validated['title'],
                 'Description' => $validated['description'],
                 'Duration' => $duration,
-                'StartTime' => $startDateTime,
-                'EndTime' => $endDateTime,
+                'StartTime' => $dates['start'],
+                'EndTime' => $dates['end'],
                 'QuizDate' => $validated['quiz_date'],
                 'LockdownEnabled' => $lockdownEnabled,
                 'CourseID' => $validated['course_id'],
