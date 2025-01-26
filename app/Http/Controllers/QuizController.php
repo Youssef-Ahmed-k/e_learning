@@ -83,13 +83,14 @@ class QuizController extends Controller
 
             if (isset($validated['quiz_date']) && isset($validated['start_time']) && isset($validated['end_time'])) {
                 // Calculate the duration automatically from start and end time
-                $startTime = strtotime($validated['start_time']);
-                $endTime = strtotime($validated['end_time']);
-                $duration = ($endTime - $startTime) / 60;
+                $startTime = Carbon::parse($validated['start_time']);
+                $endTime = Carbon::parse($validated['end_time']);
+                $duration = $endTime->diffInMinutes($startTime);
 
                 $updates['Duration'] = $duration;
-                $updates['StartTime'] = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['start_time']));
-                $updates['EndTime'] = date('Y-m-d H:i:s', strtotime($validated['quiz_date'] . ' ' . $validated['end_time']));
+                $dates = $this->formatQuizDateTime($validated['quiz_date'], $validated['start_time'], $validated['end_time']);
+                $updates['StartTime'] = $dates['start'];
+                $updates['EndTime'] = $dates['end'];
                 $updates['QuizDate'] = $validated['quiz_date'];
             }
 
