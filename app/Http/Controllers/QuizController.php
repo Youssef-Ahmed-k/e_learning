@@ -7,6 +7,7 @@ use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\AddQuestionRequest;
 use App\Models\Quiz;
 use App\Models\Question;
+use App\Models\Answer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -51,5 +52,56 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    public function addQuestion(AddQuestionRequest $request)
+    {
+        $validated = $request->validated();
 
+        DB::beginTransaction();
+        try {
+            $question = new Question([
+                'Content' => $validated['content'],
+                'Type' => $validated['type'],
+                'Marks' => $validated['marks'],
+                'QuizID' => $validated['quiz_id'],
+            ]);
+
+            if ($request->hasFile('image')) {
+                $question->image = $request->file('image')->store('question_images');
+            }
+
+            $question->save();
+
+            if ($validated['type'] === 'multiple_choice') {
+                foreach ($validated['options'] as $option) {
+                    $answer = new Answer([
+                        'AnswerText' => $option,
+                        'IsCorrect' => $option === $validated['correct_option'],
+                        'QuestionID' => $question->QuestionID,
+                    ]);
+                    $answer->save();
+                }
+            } elseif ($validated['type'] === 'true_false') {
+                $answer = new Answer([
+                    'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
+                    'IsCorrect' => true,
+                    'QuestionID' => $question->QuestionID,
+                ]);
+                $answer->save();
+            } elseif ($validated['type'] === 'short_answer') {
+                $answer = new Answer([
+                    'AnswerText' => $validated['correct_option'],
+                    'IsCorrect' => true,
+                    'QuestionID' => $question->QuestionID,
+                ]);
+                $answer->save();
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Question added successfully', 'question' => $question], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
 }
