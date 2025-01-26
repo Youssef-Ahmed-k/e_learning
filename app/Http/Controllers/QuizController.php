@@ -227,6 +227,27 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    public function deleteQuestion($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $question = Question::findOrFail($id);
+
+            // Delete related answers
+            Answer::where('QuestionID', $question->QuestionID)->delete();
+
+            // Delete the question
+            $question->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Question deleted successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
 
     protected function saveAnswers($validated, $question)
     {
