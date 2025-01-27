@@ -42,6 +42,18 @@ class QuizController extends Controller
             return response()->json(['message' => 'Quiz date and time must be in the future'], 422);
         }
 
+        // Check for overlapping quizzes in the same course
+        $overlappingQuiz = Quiz::where('CourseID', $validated['course_id'])
+            ->where(function ($query) use ($validated) {
+                $query->whereBetween('StartTime', [$validated['start_time'], $validated['end_time']])
+                    ->orWhereBetween('EndTime', [$validated['start_time'], $validated['end_time']]);
+            })
+            ->exists();
+
+        if ($overlappingQuiz) {
+            return response()->json(['message' => 'Another quiz is already scheduled during this time'], 422);
+        }
+
         // Calculate the duration automatically from start and end time
         $startTime = Carbon::parse($validated['start_time']);
         $endTime = Carbon::parse($validated['end_time']);
@@ -95,7 +107,20 @@ class QuizController extends Controller
                 if ($quizDateTime->isPast()) {
                     return response()->json(['message' => 'Quiz date and time must be in the future'], 422);
                 }
-                
+
+                // Check for overlapping quizzes in the same course
+                $overlappingQuiz = Quiz::where('CourseID', $quiz->CourseID)
+                    ->where('QuizID', '!=', $quiz->QuizID) // Exclude the current quiz
+                    ->where(function ($query) use ($validated) {
+                        $query->whereBetween('StartTime', [$validated['start_time'], $validated['end_time']])
+                            ->orWhereBetween('EndTime', [$validated['start_time'], $validated['end_time']]);
+                    })
+                    ->exists();
+
+                if ($overlappingQuiz) {
+                    return response()->json(['message' => 'Another quiz is already scheduled during this time'], 422);
+                }
+
                 // Calculate the duration automatically from start and end time
                 $startTime = Carbon::parse($validated['start_time']);
                 $endTime = Carbon::parse($validated['end_time']);
