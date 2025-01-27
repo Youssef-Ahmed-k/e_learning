@@ -60,6 +60,8 @@ Route::group([
     Route::post('courses/assign-professor', [CourseController::class, 'assignCourseToProfessor']);
     Route::get('courses/with-professor', [CourseController::class, 'getAllCoursesWithProfessorsForAdmin']);
 
+    Route::get('statistics', [AdminController::class, 'getStatistics']);
+
     Route::post('users', [AdminController::class, 'createUserAccount']);
     Route::delete('users/{user}', [AdminController::class, 'deleteUserAccount']);
     Route::patch('users/{user}', [AdminController::class, 'updateUserAccount']);
