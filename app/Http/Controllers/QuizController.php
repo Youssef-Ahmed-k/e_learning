@@ -299,12 +299,24 @@ class QuizController extends Controller
                 break;
 
             case 'true_false':
-                $answer = new Answer([
-                    'AnswerText' => $validated['correct_option'] ? 'True' : 'False',
-                    'IsCorrect' => true,
-                    'QuestionID' => $question->QuestionID,
-                ]);
-                $answer->save();
+                $answers = [
+                    [
+                        'AnswerText' => 'True',
+                        'IsCorrect' => $validated['correct_option'] === true || $validated['correct_option'] === 'true' || $validated['correct_option'] === 1,
+                        'QuestionID' => $question->QuestionID,
+                    ],
+                    [
+                        'AnswerText' => 'False',
+                        'IsCorrect' => $validated['correct_option'] === false || $validated['correct_option'] === 'false' || $validated['correct_option'] === 0,
+                        'QuestionID' => $question->QuestionID,
+                    ],
+                ];
+
+                // Save both answers
+                foreach ($answers as $answerData) {
+                    $answer = new Answer($answerData);
+                    $answer->save();
+                }
                 break;
 
             case 'short_answer':
