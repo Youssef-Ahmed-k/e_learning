@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProfile;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Course;
+use App\Models\RecentActivity;
 
 class AdminController extends Controller
 {
@@ -54,7 +55,7 @@ class AdminController extends Controller
         }
     }
 
-    public function updateUserAccount(UpdateProfile $request, User $user)   
+    public function updateUserAccount(UpdateProfile $request, User $user)
     {
         try {
             if ($request->has('name')) {
@@ -136,5 +137,46 @@ class AdminController extends Controller
                 'total_items' => $professors->total(),
             ]
         ]);
+    }
+
+    public function getStatistics()
+    {
+        try {
+            $totalUsers = User::count();
+            $totalProfessors = User::where('role', 'professor')->count();
+            $totalStudents = User::where('role', 'user')->count();
+            $totalCourses = Course::count();
+
+            return response()->json([
+                'totalUsers' => $totalUsers,
+                'totalProfessors' => $totalProfessors,
+                'totalStudents' => $totalStudents,
+                'totalCourses' => $totalCourses,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getRecentActivities()
+    {
+        try {
+            $activities = RecentActivity::with('user')
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
+
+            return response()->json([
+                'activities' => $activities,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
