@@ -115,8 +115,8 @@ class QuizController extends Controller
 
             // Check if the professor is part of the course
             $course = Course::where('CourseID', $courseId)
-                            ->where('ProfessorID', $professorId)
-                            ->first();
+                ->where('ProfessorID', $professorId)
+                ->first();
 
             if (!$course) {
                 return response()->json(['message' => 'Professor not part of the course'], 403);
@@ -124,7 +124,7 @@ class QuizController extends Controller
 
             // Get quizzes created by the professor in the course
             $quizzes = Quiz::where('CourseID', $courseId)
-                           ->pluck('Title');
+                ->pluck('Title');
 
             return response()->json(['quizzes' => $quizzes], 200);
         } catch (\Exception $e) {
@@ -261,6 +261,7 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+
     public function deleteQuestion($id)
     {
         try {
@@ -325,5 +326,4 @@ class QuizController extends Controller
         // Save new answers
         $this->saveAnswers($validated, $question);
     }
-   
 }
