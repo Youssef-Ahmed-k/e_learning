@@ -37,6 +37,13 @@ class QuestionController extends Controller
             }
         }
 
+        // Validate correct_option for MCQ questions
+        if ($validated['type'] === 'mcq' && !in_array($validated['correct_option'], $validated['options'])) {
+            return response()->json([
+                'message' => 'The correct_option must be one of the provided options for MCQ questions.',
+            ], 422);
+        }
+
         DB::beginTransaction();
         try {
             $question = new Question([
@@ -81,6 +88,13 @@ class QuestionController extends Controller
                     'message' => 'Invalid correct_option value for true/false question.',
                 ], 422);
             }
+        }
+
+        // Validate correct_option for MCQ questions
+        if (isset($validated['type']) && $validated['type'] === 'mcq' && !in_array($validated['correct_option'], $validated['options'])) {
+            return response()->json([
+                'message' => 'The correct_option must be one of the provided options for MCQ questions.',
+            ], 422);
         }
 
         DB::beginTransaction();
