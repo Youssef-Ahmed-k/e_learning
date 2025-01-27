@@ -27,9 +27,29 @@ class UpdateQuestionRequest extends FormRequest
             'marks' => 'sometimes|required|integer',
             'options' => 'sometimes|required_if:type,mcq|array',
             'options.*' => 'sometimes|required_if:type,mcq|string',
-            'correct_option' => 'sometimes|required_if:type,mcq|string|required_if:type,true_false|in:true,false,1,0|required_if:type,short_answer|string',
+            'correct_option' => [
+                'sometimes',
+                'required_if:type,mcq',
+                'required_if:type,true_false',
+                'required_if:type,short_answer',
+            ],
             'image' => 'nullable|image',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->sometimes('correct_option', 'in:true,false,1,0', function ($input) {
+            return $input->type === 'true_false';
+        });
+
+        $validator->sometimes('correct_option', 'string', function ($input) {
+            return $input->type === 'mcq' || $input->type === 'short_answer';
+        });
+
+        $validator->sometimes('correct_option', 'in:' . implode(',', $this->input('options', [])), function ($input) {
+            return $input->type === 'mcq';
+        });
     }
 
     public function messages(): array
@@ -41,7 +61,8 @@ class UpdateQuestionRequest extends FormRequest
             'marks.required' => 'The marks field is required.',
             'options.required_if' => 'The options field is required for multiple choice questions.',
             'options.*.required_if' => 'Each option is required for multiple choice questions.',
-            'correct_option.required_if' => 'The correct option field is required for multiple choice, true/false, and short answer questions.',
+            'correct_option.required_if' => 'The correct option field is required for :type questions.',
+            'correct_option.in' => 'The correct option must be one of the allowed values for true/false questions.',
             'image.image' => 'The image must be an image file.',
         ];
     }
