@@ -113,10 +113,10 @@ class QuizController extends Controller
         try {
             $professorId = auth()->user()->id;
 
-            // Check if the professor is part of the course
+            // Validate the course existence and professor association
             $course = Course::where('CourseID', $courseId)
                 ->where('ProfessorID', $professorId)
-                ->first();
+                ->firstOrFail();
 
             if (!$course) {
                 return response()->json(['message' => 'Professor not part of the course'], 403);
