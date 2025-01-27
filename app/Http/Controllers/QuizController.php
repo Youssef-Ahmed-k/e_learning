@@ -4,16 +4,11 @@ namespace App\Http\Controllers;
 
 
 use App\Http\Requests\CreateQuizRequest;
-use App\Http\Requests\AddQuestionRequest;
 use App\Http\Requests\UpdateQuizRequest;
-use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Quiz;
-use App\Models\Question;
-use App\Models\Answer;
 use App\Models\Course;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class QuizController extends Controller
 {
