@@ -124,9 +124,17 @@ class QuizController extends Controller
 
             // Get quizzes created by the professor in the course
             $quizzes = Quiz::where('CourseID', $courseId)
-                ->get();
+                ->paginate(10);
 
-            return response()->json(['quizzes' => $quizzes], 200);
+            return response()->json([
+                'quizzes' => $quizzes->items(),
+                'pagination' =>
+                [
+                    'current_page' => $quizzes->currentPage(),
+                    'total_pages' => $quizzes->lastPage(),
+                    'total_items' => $quizzes->total()
+                ]
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
