@@ -162,6 +162,16 @@ class QuestionController extends Controller
         }
     }
 
+    public function getQuizQuestions($quizId)
+    {
+        try {
+            $questions = Question::with('answers')->where('QuizID', $quizId)->get();
+            return response()->json(['questions' => $questions], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     protected function saveAnswers($validated, $question)
     {
         switch ($validated['type']) {
