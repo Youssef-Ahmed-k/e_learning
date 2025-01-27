@@ -137,4 +137,26 @@ class AdminController extends Controller
             ]
         ]);
     }
+
+    public function getStatistics()
+    {
+        try {
+            $totalUsers = User::count();
+            $totalProfessors = User::where('role', 'professor')->count();
+            $totalStudents = User::where('role', 'user')->count();
+            $totalCourses = Course::count();
+
+            return response()->json([
+                'totalUsers' => $totalUsers,
+                'totalProfessors' => $totalProfessors,
+                'totalStudents' => $totalStudents,
+                'totalCourses' => $totalCourses,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
