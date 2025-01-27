@@ -103,6 +103,7 @@ Route::group([
     Route::post('add-question', [QuestionController::class, 'addQuestion']);
     Route::patch('update-question/{id}', [QuestionController::class, 'updateQuestion']);
     Route::delete('delete-question/{id}', [QuestionController::class, 'deleteQuestion']);
+    Route::get('get-questions/{id}', [QuestionController::class, 'getQuizQuestions']);
     Route::get('course-quizzes/{courseId}', [QuizController::class, 'getCourseQuizzes']);
     Route::get('get-quiz/{id}', [QuizController::class, 'getQuiz']);
 });
