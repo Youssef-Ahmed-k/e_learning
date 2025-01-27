@@ -162,11 +162,25 @@ class QuestionController extends Controller
         }
     }
 
-    public function getQuizQuestions($quizId)
+    public function getQuizQuestions($id)
     {
         try {
-            $questions = Question::with('answers')->where('QuizID', $quizId)->get();
-            return response()->json(['questions' => $questions], 200);
+            $perPage = 1;
+            $questions = Question::with('answers')
+                ->where('QuizID', $id)
+                ->paginate($perPage);
+
+            return response()->json([
+                'questions' => $questions->items(),
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'per_page' => $questions->perPage(),
+                    'total' => $questions->total(),
+                    'last_page' => $questions->lastPage(),
+                    'next_page_url' => $questions->nextPageUrl(),
+                    'prev_page_url' => $questions->previousPageUrl(),
+                ],
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
