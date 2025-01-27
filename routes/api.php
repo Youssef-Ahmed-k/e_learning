@@ -7,8 +7,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseRegistrationController;
 use App\Http\Controllers\ProfessorController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\QuizController;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,4 +91,19 @@ Route::group([
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'quiz'
+], function ($router) {
+    Route::post('create-quiz', [QuizController::class, 'createQuiz']);
+    Route::patch('update-quiz/{id}', [QuizController::class, 'updateQuiz']);
+    Route::delete('delete-quiz/{id}', [QuizController::class, 'deleteQuiz']);
+    Route::post('add-question', [QuestionController::class, 'addQuestion']);
+    Route::patch('update-question/{id}', [QuestionController::class, 'updateQuestion']);
+    Route::delete('delete-question/{id}', [QuestionController::class, 'deleteQuestion']);
+    Route::get('get-questions/{id}', [QuestionController::class, 'getQuizQuestions']);
+    Route::get('course-quizzes/{courseId}', [QuizController::class, 'getCourseQuizzes']);
+    Route::get('get-quiz/{id}', [QuizController::class, 'getQuiz']);
 });
