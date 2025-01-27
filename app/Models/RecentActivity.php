@@ -14,6 +14,8 @@ class RecentActivity extends Model
         'activity',
     ];
 
+    public $timestamps = false;
+
     public function user()
     {
         return $this->belongsTo(User::class);
