@@ -7,6 +7,7 @@ use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
 use App\Models\Course;
+use App\Models\CourseRegistration;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor');
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes']]);
     }
 
     // Helper method to handle date and time logic
@@ -189,6 +190,24 @@ class QuizController extends Controller
             $quiz->delete();
 
             return response()->json(['message' => 'Quiz deleted successfully'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function getStudentQuizzes()
+    {
+        try {
+            $studentId = auth()->user()->id;
+
+            // Get courses the student is enrolled in
+            $courses = CourseRegistration::where('StudentID', $studentId)->pluck('CourseID');
+
+            // Get quizzes for the courses the student is enrolled in
+            $quizzes = Quiz::whereIn('CourseID', $courses)
+                ->select('Title', 'Description', 'StartTime', 'EndTime', 'CourseID')
+                ->get();
+
+            return response()->json(['quizzes' => $quizzes], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
