@@ -18,6 +18,7 @@ class QuizController extends Controller
     {
         $this->middleware('auth:api');
         $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz']]);
     }
 
     // Helper method to handle date and time logic
