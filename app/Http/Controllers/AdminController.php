@@ -142,10 +142,25 @@ class AdminController extends Controller
 
     public function getAllProfessors()
     {
-        $professors = User::where('role', 'professor')->paginate(10);
+        $professors = User::where('role', 'professor')
+            ->with('courses')
+            ->paginate(10);
 
         return response()->json([
-            'professors' => $professors->items(),
+            'professors' => $professors->map(function ($professor) {
+                return [
+                    'id' => $professor->id,
+                    'name' => $professor->name,
+                    'email' => $professor->email,
+                    'is_blocked' => $professor->is_suspended,
+                    'courses' => $professor->courses->map(function ($course) {
+                        return [
+                            'id' => $course->CourseID,
+                            'name' => $course->CourseName,
+                        ];
+                    }),
+                ];
+            }),
             'pagination' => [
                 'current_page' => $professors->currentPage(),
                 'total_pages' => $professors->lastPage(),
