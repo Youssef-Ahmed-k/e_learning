@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateUserByAdminRequest;
 use App\Http\Requests\Register;
 use App\Http\Requests\UpdateProfile;
 use Illuminate\Http\Request;
@@ -18,10 +19,12 @@ class AdminController extends Controller
     }
 
 
-    public function createUserAccount(Register $request)
+    public function createUserAccount(CreateUserByAdminRequest $request)
     {
         try {
             $data = $request->validated();
+            // Ensure the role is set to 'user' if not provided
+            $data['role'] = $data['role'] ?? 'user';
             $user = User::create($data);
 
             return response()->json([
@@ -29,6 +32,7 @@ class AdminController extends Controller
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
                 ]
             ], 201);
         } catch (\Exception $e) {
