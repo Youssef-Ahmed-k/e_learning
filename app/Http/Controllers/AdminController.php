@@ -113,10 +113,25 @@ class AdminController extends Controller
 
     public function getAllStudents()
     {
-        $students = User::where('role', 'user')->paginate(10);
+        $students = User::where('role', 'user')
+            ->with('courseRegistrations.course')
+            ->paginate(10);
 
         return response()->json([
-            'students' => $students->items(),
+            'students' => $students->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'is_blocked' => $student->is_suspended,
+                    'courses' => $student->courseRegistrations->map(function ($registration) {
+                        return [
+                            'id' => $registration->course->CourseID,
+                            'name' => $registration->course->CourseName,
+                        ];
+                    }),
+                ];
+            }),
             'pagination' => [
                 'current_page' => $students->currentPage(),
                 'total_pages' => $students->lastPage(),
