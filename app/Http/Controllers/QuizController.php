@@ -6,19 +6,22 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
+use App\Models\Question;
 use App\Models\Course;
 use App\Models\CourseRegistration;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class QuizController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz'  ,'submitQuiz']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz','submitQuiz']]);
     }
 
     // Helper method to handle date and time logic
@@ -268,5 +271,38 @@ class QuizController extends Controller
     private function hasStudentStartedQuiz($studentId, $quizId)
     {
         return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
+    }
+    public function submitQuiz(Request $request, $quizId)
+    {        
+        $validated = $request->validate([
+            'answers' => 'required|array', // Ensure answers are provided as an array
+            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
+            'answers.*.answer' => 'required', // Ensure each answer is provided
+        ]);
+
+        try {
+            DB::beginTransaction(); 
+
+            $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
+
+            // Loop through each answer provided by the student
+            foreach ($validated['answers'] as $answerData) {
+                $question = Question::findOrFail($answerData['question_id']); // Ensure the question exists
+
+                // Store student's answer in the database
+                StudentAnswer::create([
+                    'StudentId' => auth()->user()->id, 
+                    'QuestionId' => $question->QuestionID, 
+                    'SelectedAnswerId' => $answerData['answer'], 
+                    'QuizID' => $quiz->QuizID, 
+                ]);
+            }
+
+            DB::commit(); 
+            return response()->json(['message' => 'Quiz submitted successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback the transaction if an error occurs
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
     }
 }
