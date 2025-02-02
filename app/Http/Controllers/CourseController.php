@@ -151,10 +151,16 @@ class CourseController extends Controller
     {
         $courses = Course::with('professor')
             ->withCount('courseRegistrations')
-            ->get();
+            ->paginate(10);
+
 
         return response()->json([
-            'data' => $courses,
+            'data' => $courses->items(),
+            'pagination' => [
+                "current_page" => $courses->currentPage(),
+                "total_pages" => $courses->lastPage(),
+                "total_items" => $courses->total(),
+            ]
         ]);
     }
 }
