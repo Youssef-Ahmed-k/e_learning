@@ -7,15 +7,18 @@ use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
 use App\Models\Course;
+use App\Models\CourseRegistration;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Models\StudentQuiz;
 
 class QuizController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor');
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz']]);
     }
 
     // Helper method to handle date and time logic
@@ -192,5 +195,78 @@ class QuizController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
+    }
+    public function getStudentQuizzes()
+    {
+        try {
+            $studentId = auth()->user()->id;
+
+            // Get courses the student is enrolled in
+            $courses = CourseRegistration::where('StudentID', $studentId)->pluck('CourseID');
+
+            // Get quizzes for the courses the student is enrolled in
+            $quizzes = Quiz::whereIn('CourseID', $courses)
+                ->select('QuizID', 'Title', 'Description', 'StartTime', 'EndTime', 'CourseID', 'Duration', 'QuizDate')
+                ->get();
+
+            // Filter out quizzes the student has already started or quizzes whose end time has passed
+            $filteredQuizzes = $quizzes->reject(function ($quiz) use ($studentId) {
+                // Check if the student has started the quiz or if the quiz end time has passed
+                return $this->hasStudentStartedQuiz($studentId, $quiz->QuizID)
+                    || $quiz->EndTime <= now();
+            });
+
+            return response()->json(['quizzes' => $filteredQuizzes->values()], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
+    public function startQuiz($id)
+    {
+        try {
+            $quiz = Quiz::with('questions.answers')->findOrFail($id);
+
+            // Get current time
+            $currentDateTime = Carbon::now();
+            $startTime = Carbon::parse($quiz->StartTime);
+            $endTime = Carbon::parse($quiz->EndTime);
+
+            // Check if the quiz is not yet active
+            if ($currentDateTime->lt($startTime)) {
+                $remainingTime = $currentDateTime->diffForHumans($startTime);
+                return response()->json([
+                    'message' => "Quiz will start in $remainingTime"
+                ], 403);
+            }
+
+            // Check if the quiz has already ended
+            if ($currentDateTime->gt($endTime)) {
+                return response()->json(['message' => 'Quiz has already ended'], 403);
+            }
+
+            // Check if the student has already started the quiz
+            $studentId = auth()->user()->id;
+            if ($this->hasStudentStartedQuiz($studentId, $id)) {
+                return response()->json(['message' => 'You have already started this quiz'], 403);
+            }
+
+            // Record that the student has started the quiz
+            StudentQuiz::create([
+                'student_id' => $studentId,
+                'quiz_id' => $id,
+            ]);
+
+            return response()->json(['quiz' => $quiz], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function hasStudentStartedQuiz($studentId, $quizId)
+    {
+        return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
     }
 }

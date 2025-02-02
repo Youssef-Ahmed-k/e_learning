@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseRegistration;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CourseController extends Controller
 {
@@ -44,10 +45,21 @@ class CourseController extends Controller
     {
         $request->validate([
             'CourseName' => 'required|string|max:255',
+            'CourseCode' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9]+$/', // Alphanumeric validation
+                Rule::unique('courses', 'CourseCode'),
+            ],
+        ], [
+            'CourseCode.unique' => 'The course code must be unique.',
+            'CourseCode.regex' => 'The course code must contain only letters and numbers.',
         ]);
 
         $course = Course::create([
             'CourseName' => $request->CourseName,
+            'CourseCode' => $request->CourseCode
         ]);
 
         return response()->json([
@@ -59,10 +71,26 @@ class CourseController extends Controller
     public function updateCourse(Request $request, Course $course)
     {
         $request->validate([
-            'CourseName' => 'required|string|max:255',
+            'CourseName' => 'nullable|string|max:255',
+            'CourseCode' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9]+$/', // Alphanumeric validation
+                Rule::unique('courses', 'CourseCode')->ignore($course->id),
+            ],
+        ], [
+            'CourseCode.unique' => 'The course code must be unique.',
+            'CourseCode.regex' => 'The course code must contain only letters and numbers.',
         ]);
 
-        $course->CourseName = $request->CourseName;
+        if ($request->has('CourseName')) {
+            $course->CourseName = $request->CourseName;
+        }
+
+        if ($request->has('CourseCode')) {
+            $course->CourseCode = $request->CourseCode;
+        }
         $course->save();
 
         return response()->json([
@@ -149,11 +177,17 @@ class CourseController extends Controller
 
     public function getAllCoursesWithProfessorsForAdmin()
     {
-        $courses = Course::with('professor')->get();
+        $courses = Course::with('professor')
+            ->withCount('courseRegistrations')
+            ->paginate(10);
+
 
         return response()->json([
-            'data' => [
-                'courses' => $courses,
+            'data' => $courses->items(),
+            'pagination' => [
+                "current_page" => $courses->currentPage(),
+                "total_pages" => $courses->lastPage(),
+                "total_items" => $courses->total(),
             ]
         ]);
     }

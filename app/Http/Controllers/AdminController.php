@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateUserByAdminRequest;
 use App\Http\Requests\Register;
 use App\Http\Requests\UpdateProfile;
 use Illuminate\Http\Request;
@@ -18,10 +19,12 @@ class AdminController extends Controller
     }
 
 
-    public function createUserAccount(Register $request)
+    public function createUserAccount(CreateUserByAdminRequest $request)
     {
         try {
             $data = $request->validated();
+            // Ensure the role is set to 'user' if not provided
+            $data['role'] = $data['role'] ?? 'user';
             $user = User::create($data);
 
             return response()->json([
@@ -29,6 +32,7 @@ class AdminController extends Controller
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
                 ]
             ], 201);
         } catch (\Exception $e) {
@@ -113,10 +117,25 @@ class AdminController extends Controller
 
     public function getAllStudents()
     {
-        $students = User::where('role', 'user')->paginate(10);
+        $students = User::where('role', 'user')
+            ->with('courseRegistrations.course')
+            ->paginate(10);
 
         return response()->json([
-            'students' => $students->items(),
+            'students' => $students->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'is_blocked' => $student->is_suspended,
+                    'courses' => $student->courseRegistrations->map(function ($registration) {
+                        return [
+                            'id' => $registration->course->CourseID,
+                            'name' => $registration->course->CourseName,
+                        ];
+                    }),
+                ];
+            }),
             'pagination' => [
                 'current_page' => $students->currentPage(),
                 'total_pages' => $students->lastPage(),
@@ -127,10 +146,25 @@ class AdminController extends Controller
 
     public function getAllProfessors()
     {
-        $professors = User::where('role', 'professor')->paginate(10);
+        $professors = User::where('role', 'professor')
+            ->with('courses')
+            ->paginate(10);
 
         return response()->json([
-            'professors' => $professors->items(),
+            'professors' => $professors->map(function ($professor) {
+                return [
+                    'id' => $professor->id,
+                    'name' => $professor->name,
+                    'email' => $professor->email,
+                    'is_blocked' => $professor->is_suspended,
+                    'courses' => $professor->courses->map(function ($course) {
+                        return [
+                            'id' => $course->CourseID,
+                            'name' => $course->CourseName,
+                        ];
+                    }),
+                ];
+            }),
             'pagination' => [
                 'current_page' => $professors->currentPage(),
                 'total_pages' => $professors->lastPage(),
