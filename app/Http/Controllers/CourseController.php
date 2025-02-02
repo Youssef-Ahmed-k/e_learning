@@ -44,10 +44,12 @@ class CourseController extends Controller
     {
         $request->validate([
             'CourseName' => 'required|string|max:255',
+            'CourseCode' => 'required|string|max:255',
         ]);
 
         $course = Course::create([
             'CourseName' => $request->CourseName,
+            'CourseCode' => $request->CourseCode
         ]);
 
         return response()->json([
@@ -60,9 +62,16 @@ class CourseController extends Controller
     {
         $request->validate([
             'CourseName' => 'required|string|max:255',
+            'CourseCode' => 'required|string|max:255',
         ]);
 
-        $course->CourseName = $request->CourseName;
+        if ($request->has('CourseName')) {
+            $course->CourseName = $request->CourseName;
+        }
+
+        if ($request->has('CourseCode')) {
+            $course->CourseCode = $request->CourseCode;
+        }
         $course->save();
 
         return response()->json([
