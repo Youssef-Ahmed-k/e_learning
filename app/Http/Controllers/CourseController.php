@@ -149,12 +149,12 @@ class CourseController extends Controller
 
     public function getAllCoursesWithProfessorsForAdmin()
     {
-        $courses = Course::with('professor')->get();
+        $courses = Course::with('professor')
+            ->withCount('courseRegistrations')
+            ->get();
 
         return response()->json([
-            'data' => [
-                'courses' => $courses,
-            ]
+            'data' => $courses,
         ]);
     }
 }
