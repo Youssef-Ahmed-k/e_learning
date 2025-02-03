@@ -247,8 +247,15 @@ class QuizController extends Controller
 
     public function deleteQuiz($id)
     {
+        $professorId = auth()->user()->id;
         try {
             $quiz = Quiz::findOrFail($id);
+
+            // Check if the professor owns the course
+            $course = Course::findOrFail($quiz->CourseID);
+            if ($course->ProfessorID !== $professorId) {
+                return response()->json(['message' => 'You do not own this course'], 403);
+            }
             $quiz->delete();
 
             return response()->json(['message' => 'Quiz deleted successfully'], 200);
