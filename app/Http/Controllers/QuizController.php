@@ -20,8 +20,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz'  ,'submitQuiz']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz','submitQuiz']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz']]);
     }
 
     // Helper method to handle date and time logic
@@ -165,6 +165,44 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    public function getAllQuizzes()
+    {
+        try {
+            $professorId = auth()->user()->id;
+
+            $courses = Course::where('ProfessorID', $professorId)
+                ->select('CourseID')
+                ->get();
+
+            // Get quizzes for those courses and include CourseName
+            $quizzes = Quiz::join('courses', 'quizzes.CourseID', '=', 'courses.CourseID') // Join with courses table
+                ->whereIn('quizzes.CourseID', $courses->pluck('CourseID')) // Explicit table reference
+                ->select(
+                    'quizzes.QuizID',
+                    'quizzes.Title',
+                    'quizzes.Description',
+                    'quizzes.StartTime',
+                    'quizzes.EndTime',
+                    'quizzes.CourseID',
+                    'quizzes.Duration',
+                    'quizzes.QuizDate',
+                    'courses.CourseName'
+                )
+                ->paginate(3);
+
+            return response()->json([
+                'quizzes' => $quizzes->items(),
+                'pagination' =>
+                [
+                    'current_page' => $quizzes->currentPage(),
+                    'total_pages' => $quizzes->lastPage(),
+                    'total_items' => $quizzes->total()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
     public function getCourseQuizzes($courseId)
     {
         try {
@@ -292,7 +330,7 @@ class QuizController extends Controller
         return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
     }
     public function submitQuiz(Request $request, $quizId)
-    {        
+    {
         $validated = $request->validate([
             'answers' => 'required|array', // Ensure answers are provided as an array
             'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
@@ -300,7 +338,7 @@ class QuizController extends Controller
         ]);
 
         try {
-            DB::beginTransaction(); 
+            DB::beginTransaction();
 
             $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
 
@@ -310,14 +348,14 @@ class QuizController extends Controller
 
                 // Store student's answer in the database
                 StudentAnswer::create([
-                    'StudentId' => auth()->user()->id, 
-                    'QuestionId' => $question->QuestionID, 
-                    'SelectedAnswerId' => $answerData['answer'], 
-                    'QuizID' => $quiz->QuizID, 
+                    'StudentId' => auth()->user()->id,
+                    'QuestionId' => $question->QuestionID,
+                    'SelectedAnswerId' => $answerData['answer'],
+                    'QuizID' => $quiz->QuizID,
                 ]);
             }
 
-            DB::commit(); 
+            DB::commit();
             return response()->json(['message' => 'Quiz submitted successfully'], 200);
         } catch (\Exception $e) {
             DB::rollBack(); // Rollback the transaction if an error occurs
