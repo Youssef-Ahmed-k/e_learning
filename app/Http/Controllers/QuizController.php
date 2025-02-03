@@ -36,6 +36,13 @@ class QuizController extends Controller
     public function createQuiz(CreateQuizRequest $request)
     {
         $validated = $request->validated();
+        $professorId = auth()->user()->id;
+
+        // Check if the professor owns the course
+        $course = Course::findOrFail($validated['course_id']);
+        if ($course->ProfessorID !== $professorId) {
+            return response()->json(['message' => 'You do not own this course'], 403);
+        }
 
         // Ensure quiz date and time are in the future
         $quizDateTime = Carbon::parse("{$validated['quiz_date']} {$validated['start_time']}");
