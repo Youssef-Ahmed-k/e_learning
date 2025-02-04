@@ -24,10 +24,10 @@ class ProfessorController extends Controller
     private function handleFileUpload(Request $request, $type, $oldPath = null)
     {
         if ($oldPath) {
-            Storage::delete($oldPath);
+            Storage::disk('public')->delete($oldPath);
         }
 
-        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos');
+        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos', 'public');
     }
 
     // view all registered courses
@@ -104,10 +104,10 @@ class ProfessorController extends Controller
 
             // Delete the material file and video from storage
             if ($material->FilePath) {
-                Storage::delete($material->FilePath);
+                Storage::disk('public')->delete($material->FilePath);
             }
             if ($material->VideoPath) {
-                Storage::delete($material->VideoPath);
+                Storage::disk('public')->delete($material->VideoPath);
             }
 
             // Delete the material record from the database
