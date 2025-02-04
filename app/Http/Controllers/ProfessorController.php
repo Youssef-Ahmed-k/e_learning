@@ -171,4 +171,37 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+
+    public function getCourseMaterials($course_id)
+    {
+        try {
+            // Ensure the authenticated professor is assigned to the course
+            $course = Course::where('CourseID', $course_id)
+                ->where('ProfessorID', auth()->id())
+                ->first();
+
+            if (!$course) {
+                return response()->json(['message' => 'Unauthorized access to course materials'], 403);
+            }
+
+            $materials = Material::where('CourseID', $course_id)->get();
+
+            // Add file and video URLs
+            foreach ($materials as $material) {
+                if ($material->FilePath) {
+                    $material->FilePath = Storage::url($material->FilePath);
+                }
+                if ($material->VideoPath) {
+                    $material->VideoPath = Storage::url($material->VideoPath);
+                }
+            }
+            
+            return response()->json(['data' => $materials], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
