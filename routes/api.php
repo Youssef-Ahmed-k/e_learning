@@ -94,6 +94,7 @@ Route::group([
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
+    Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
 });
 
 Route::group([

@@ -24,10 +24,10 @@ class ProfessorController extends Controller
     private function handleFileUpload(Request $request, $type, $oldPath = null)
     {
         if ($oldPath) {
-            Storage::delete($oldPath);
+            Storage::disk('public')->delete($oldPath);
         }
 
-        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos');
+        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos', 'public');
     }
 
     // view all registered courses
@@ -104,10 +104,10 @@ class ProfessorController extends Controller
 
             // Delete the material file and video from storage
             if ($material->FilePath) {
-                Storage::delete($material->FilePath);
+                Storage::disk('public')->delete($material->FilePath);
             }
             if ($material->VideoPath) {
-                Storage::delete($material->VideoPath);
+                Storage::disk('public')->delete($material->VideoPath);
             }
 
             // Delete the material record from the database
@@ -167,6 +167,39 @@ class ProfessorController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Update course material failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getCourseMaterials($course_id)
+    {
+        try {
+            // Ensure the authenticated professor is assigned to the course
+            $course = Course::where('CourseID', $course_id)
+                ->where('ProfessorID', auth()->id())
+                ->first();
+
+            if (!$course) {
+                return response()->json(['message' => 'Unauthorized access to course materials'], 403);
+            }
+
+            $materials = Material::where('CourseID', $course_id)->get();
+
+            // Add file and video URLs
+            foreach ($materials as $material) {
+                if ($material->FilePath) {
+                    $material->FilePath = Storage::url($material->FilePath);
+                }
+                if ($material->VideoPath) {
+                    $material->VideoPath = Storage::url($material->VideoPath);
+                }
+            }
+            
+            return response()->json(['data' => $materials], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
                 'error' => $e->getMessage(),
             ], 500);
         }
