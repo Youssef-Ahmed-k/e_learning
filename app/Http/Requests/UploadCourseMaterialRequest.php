@@ -31,7 +31,7 @@ class UploadCourseMaterialRequest extends FormRequest
 
         return [
             'title' => 'required|string|max:255',
-            'description' => $this->material_type === 'text' ? 'required|string|max:255' : 'nullable|string|max:255',
+            'description' => $this->material_type === 'text' ? 'required|string|max:1000' : 'sometimes|nullable|string|max:255',
             'file' => $this->material_type !== 'text' ? $fileRules : 'nullable',
             'video' => $this->material_type !== 'text' ? ['nullable', 'file', 'mimes:mp4', 'max:10240'] : 'nullable',
             'material_type' => 'required|string|in:pdf,video,text',
