@@ -91,6 +91,7 @@ Route::group([
     'prefix' => 'professor'
 ], function ($router) {
     Route::get('courses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::get('getCoursesWithResults', [ProfessorController::class, 'getCoursesWithResults']);
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
