@@ -114,4 +114,5 @@ Route::group([
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
     Route::get('start-quiz/{id}', [QuizController::class, 'startQuiz']);
     Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
+    Route::get('getQuizResult/{id}',[QuizController::class, 'getQuizResult']);
 });
