@@ -22,8 +22,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
     }
 
     // Helper method to handle date and time logic
@@ -339,65 +339,90 @@ class QuizController extends Controller
         return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
     }
     public function submitQuiz(Request $request, $quizId)
-{
-    $validated = $request->validate([
-        'answers' => 'required|array', // Ensure answers are provided as an array
-        'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
-        'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        $studentId = auth()->user()->id;
-        $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
-        $totalScore = 0; // Initialize total score
-
-        foreach ($validated['answers'] as $answerData) {
-            $question = Question::with('answers')->findOrFail($answerData['question_id']);
-
-            // Retrieve the selected answer
-            $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
-                ->where('QuestionID', $question->QuestionID)
-                ->firstOrFail();
-
-            // Award marks if the answer is correct
-            if ($selectedAnswer->IsCorrect) {
-                $totalScore += $question->Marks;
-            }
-
-            // Store the student's answer
-            StudentAnswer::create([
-                'StudentId' => $studentId,
-                'QuestionId' => $question->QuestionID,
-                'SelectedAnswerId' => $selectedAnswer->AnswerID,
-            ]);
-        }
-
-        // Calculate the total marks for the quiz
-        $maxScore = Question::where('QuizID', $quizId)->sum('Marks');
-        $percentage = ($maxScore > 0) ? ($totalScore / $maxScore) * 100 : 0;
-        $passed = $percentage >= 50; // Consider 50% as the passing mark
-
-        // Store the student's quiz result
-        QuizResult::create([
-            'Score' => $totalScore,
-            'Percentage' => $percentage,
-            'Passed' => $passed,
-            'SubmittedAt' => now(),
-            'StudentID' => $studentId,
-            'QuizID' => $quiz->QuizID,
+    {
+        $validated = $request->validate([
+            'answers' => 'required|array', // Ensure answers are provided as an array
+            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
+            'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
         ]);
 
-        DB::commit();
-        return response()->json([
-            'message' => 'Quiz submitted successfully',
-            
-        ], 200);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
-    }
-}
+        try {
+            DB::beginTransaction();
 
+            $studentId = auth()->user()->id;
+            $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
+            $totalScore = 0; // Initialize total score
+
+            foreach ($validated['answers'] as $answerData) {
+                $question = Question::with('answers')->findOrFail($answerData['question_id']);
+
+                // Retrieve the selected answer
+                $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
+                    ->where('QuestionID', $question->QuestionID)
+                    ->firstOrFail();
+
+                // Award marks if the answer is correct
+                if ($selectedAnswer->IsCorrect) {
+                    $totalScore += $question->Marks;
+                }
+
+                // Store the student's answer
+                StudentAnswer::create([
+                    'StudentId' => $studentId,
+                    'QuestionId' => $question->QuestionID,
+                    'SelectedAnswerId' => $selectedAnswer->AnswerID,
+                ]);
+            }
+
+            // Calculate the total marks for the quiz
+            $maxScore = Question::where('QuizID', $quizId)->sum('Marks');
+            $percentage = ($maxScore > 0) ? ($totalScore / $maxScore) * 100 : 0;
+            $passed = $percentage >= 50; // Consider 50% as the passing mark
+
+            // Store the student's quiz result
+            QuizResult::create([
+                'Score' => $totalScore,
+                'Percentage' => $percentage,
+                'Passed' => $passed,
+                'SubmittedAt' => now(),
+                'StudentID' => $studentId,
+                'QuizID' => $quiz->QuizID,
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Quiz submitted successfully',
+                
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function getQuizResult($quizId)
+    {
+        try {
+            $user = auth()->user()->id; // Get the authenticated user
+
+            // Find the quiz result for the student
+            $quizResult = QuizResult::where('QuizID', $quizId)->where('StudentID', $user)->first();
+
+            if (!$quizResult) {
+                return response()->json(['message' => 'No quiz result found'], 404);
+            }
+
+            // Return the result with pass/fail status
+            return response()->json([
+                'score' => $quizResult->Score,
+                'percentage' => $quizResult->Percentage,
+                'passed' => $quizResult->Passed,
+            ]);
+        } catch (\Exception $e) {
+            // Catch any exceptions and return an error message
+            return response()->json([
+                'message' => 'An error occurred while retrieving the quiz result.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
