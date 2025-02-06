@@ -23,9 +23,16 @@ class CourseController extends Controller
     {
         $students = CourseRegistration::with('student')
             ->where('CourseID', $courseID)
-            ->get();
+            ->paginate(10);
 
-        return response()->json(['students' => $students]);
+        return response()->json([
+            'data' => $students->items(),
+            'pagination' => [
+                "current_page" => $students->currentPage(),
+                "total_pages" => $students->lastPage(),
+                "total_items" => $students->total(),
+            ]
+        ]);
     }
 
     // get course details with professor name and materials
