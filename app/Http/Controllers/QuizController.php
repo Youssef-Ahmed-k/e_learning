@@ -13,6 +13,7 @@ use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
 use App\Models\QuizResult;
 use App\Models\Answer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -265,7 +266,44 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    
+    public function getQuizScores($quizId)
+    //for professor
+    {
+        try {
+            // Retrieve the quiz results for the specified quiz
+            $quizResults = QuizResult::where('QuizID', $quizId)->get();
+
+            if ($quizResults->isEmpty()) {
+                return response()->json(['message' => 'No results found for this quiz'], 404);
+            }
+
+            // Create an array containing the student name and score
+            $scores = $quizResults->map(function ($result) {
+                $student = User::find($result->StudentID); // Retrieve the student data
+                return [
+                    'student_name' => $student ? $student->name : 'Unknown', // Get the student name or show "Unknown"
+                    'score' => $result->Score,
+                    'percentage' => $result->Percentage,
+                    'passed' => $result->Passed,
+                ];
+            });
+
+            // Return the result
+            return response()->json([
+                'quiz_id' => $quizId,
+                'students_scores' => $scores,
+            ]);
+        } catch (\Exception $e) {
+            // Catch any exceptions and return an error message
+            return response()->json([
+                'message' => 'An error occurred while retrieving the quiz scores.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function getStudentQuizzes()
+    //for student
     {
         try {
             $studentId = auth()->user()->id;
@@ -290,9 +328,6 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
-
-
-
     public function startQuiz($id)
     {
         try {
@@ -400,6 +435,7 @@ class QuizController extends Controller
         }
     }
     public function getQuizResult($quizId)
+    //for student
     {
         try {
             $user = auth()->user()->id; // Get the authenticated user
