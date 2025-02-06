@@ -11,6 +11,8 @@ use App\Models\Course;
 use App\Models\CourseRegistration;
 use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
+use App\Models\QuizResult;
+use App\Models\Answer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -337,36 +339,65 @@ class QuizController extends Controller
         return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
     }
     public function submitQuiz(Request $request, $quizId)
-    {
-        $validated = $request->validate([
-            'answers' => 'required|array', // Ensure answers are provided as an array
-            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
-            'answers.*.answer' => 'required', // Ensure each answer is provided
-        ]);
+{
+    $validated = $request->validate([
+        'answers' => 'required|array', // Ensure answers are provided as an array
+        'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
+        'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
+    ]);
 
-        try {
-            DB::beginTransaction();
+    try {
+        DB::beginTransaction();
 
-            $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
+        $studentId = auth()->user()->id;
+        $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
+        $totalScore = 0; // Initialize total score
 
-            // Loop through each answer provided by the student
-            foreach ($validated['answers'] as $answerData) {
-                $question = Question::findOrFail($answerData['question_id']); // Ensure the question exists
+        foreach ($validated['answers'] as $answerData) {
+            $question = Question::with('answers')->findOrFail($answerData['question_id']);
 
-                // Store student's answer in the database
-                StudentAnswer::create([
-                    'StudentId' => auth()->user()->id,
-                    'QuestionId' => $question->QuestionID,
-                    'SelectedAnswerId' => $answerData['answer'],
-                    'QuizID' => $quiz->QuizID,
-                ]);
+            // Retrieve the selected answer
+            $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
+                ->where('QuestionID', $question->QuestionID)
+                ->firstOrFail();
+
+            // Award marks if the answer is correct
+            if ($selectedAnswer->IsCorrect) {
+                $totalScore += $question->Marks;
             }
 
-            DB::commit();
-            return response()->json(['message' => 'Quiz submitted successfully'], 200);
-        } catch (\Exception $e) {
-            DB::rollBack(); // Rollback the transaction if an error occurs
-            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+            // Store the student's answer
+            StudentAnswer::create([
+                'StudentId' => $studentId,
+                'QuestionId' => $question->QuestionID,
+                'SelectedAnswerId' => $selectedAnswer->AnswerID,
+            ]);
         }
+
+        // Calculate the total marks for the quiz
+        $maxScore = Question::where('QuizID', $quizId)->sum('Marks');
+        $percentage = ($maxScore > 0) ? ($totalScore / $maxScore) * 100 : 0;
+        $passed = $percentage >= 50; // Consider 50% as the passing mark
+
+        // Store the student's quiz result
+        QuizResult::create([
+            'Score' => $totalScore,
+            'Percentage' => $percentage,
+            'Passed' => $passed,
+            'SubmittedAt' => now(),
+            'StudentID' => $studentId,
+            'QuizID' => $quiz->QuizID,
+        ]);
+
+        DB::commit();
+        return response()->json([
+            'message' => 'Quiz submitted successfully',
+            
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
     }
+}
+
 }
