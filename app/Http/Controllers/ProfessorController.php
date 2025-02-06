@@ -9,6 +9,7 @@ use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
+use App\Models\QuizResult;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -204,4 +205,65 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+    public function getCoursesWithResults()
+    {
+        try {
+            // Get the authenticated professor user from the token
+            $professor = auth()->user(); // هنا نجيب كائن الـ user نفسه مش الـ id فقط
+    
+            // Retrieve all courses that the professor is teaching
+            $courses = $professor->courses; // نستخدم العلاقة hasMany بين الـ User و الـ Course
+    
+            if ($courses->isEmpty()) {
+                return response()->json(['message' => 'No courses found for this professor'], 404);
+            }
+    
+            // Map each course with its quizzes and student results
+            $coursesData = $courses->map(function ($course) {
+                // Get quizzes for the current course
+                $quizzes = $course->quizzes; // العلاقة بين الـ Course و الـ Quiz
+    
+                // Map each quiz with its student results
+                $quizzesData = $quizzes->map(function ($quiz) {
+                    // Get quiz results for the specific quiz
+                    $quizResults = $quiz->quizResults; // العلاقة بين الـ Quiz و الـ QuizResult
+    
+                    // Map each student's result
+                    $studentsScores = $quizResults->map(function ($result) {
+                        $student = $result->student; // الوصول إلى الطالب من خلال العلاقة بين QuizResult و User
+                        return [
+                            'student_name' => $student ? $student->name : 'Unknown', 
+                            'score' => $result->Score,
+                            'percentage' => $result->Percentage,
+                            'passed' => $result->Passed,
+                        ];
+                    });
+    
+                    return [
+                        'quiz_id' => $quiz->QuizID,
+                        'quiz_name' => $quiz->Title, 
+                        'students_scores' => $studentsScores, 
+                    ];
+                });
+    
+                return [
+                    'course_id' => $course->CourseID,
+                    'course_name' => $course->CourseName, 
+                    'quizzes' => $quizzesData,
+                ];
+            });
+    
+            // Return courses, quizzes, and student results
+            return response()->json([
+                'courses' => $coursesData,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving professor courses and results.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
+    
 }
