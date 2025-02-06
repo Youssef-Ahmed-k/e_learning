@@ -13,8 +13,9 @@ class CourseController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:admin')->except('getAllCoursesWithProfessors');
+        $this->middleware('role:admin')->except('getAllCoursesWithProfessors', 'getStudentsInCourse');
         $this->middleware('role:user')->only('getAllCoursesWithProfessors');
+        $this->middleware('role:professor')->only('getStudentsInCourse');
     }
 
     // view all students registered for a specific course
