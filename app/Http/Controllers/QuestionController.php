@@ -220,15 +220,6 @@ class QuestionController extends Controller
                     $answer->save();
                 }
                 break;
-
-            case 'short_answer':
-                $answer = new Answer([
-                    'AnswerText' => $validated['correct_option'],
-                    'IsCorrect' => true,
-                    'QuestionID' => $question->QuestionID,
-                ]);
-                $answer->save();
-                break;
         }
     }
 
