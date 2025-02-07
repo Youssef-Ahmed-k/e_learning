@@ -191,16 +191,10 @@ class QuizController extends Controller
                     'quizzes.QuizDate',
                     'courses.CourseName'
                 )
-                ->paginate(3);
+                ->get();
 
             return response()->json([
-                'quizzes' => $quizzes->items(),
-                'pagination' =>
-                [
-                    'current_page' => $quizzes->currentPage(),
-                    'total_pages' => $quizzes->lastPage(),
-                    'total_items' => $quizzes->total()
-                ]
+                'quizzes' => $quizzes,
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
@@ -266,7 +260,7 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
-    
+
     public function getQuizScores($quizId)
     //for professor
     {
@@ -427,7 +421,7 @@ class QuizController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'Quiz submitted successfully',
-                
+
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
