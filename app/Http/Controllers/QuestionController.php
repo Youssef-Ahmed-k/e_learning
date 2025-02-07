@@ -54,7 +54,7 @@ class QuestionController extends Controller
             ]);
 
             if ($request->hasFile('image')) {
-                $question->image = $request->file('image')->store('question_images');
+                $question->image = $request->file('image')->store('question_images', 'public');
             }
 
             $question->save();
