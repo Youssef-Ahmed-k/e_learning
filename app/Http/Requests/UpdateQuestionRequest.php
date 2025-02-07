@@ -23,7 +23,7 @@ class UpdateQuestionRequest extends FormRequest
     {
         return [
             'content' => 'sometimes|required|string',
-            'type' => 'sometimes|required|string|in:mcq,true_false,short_answer',
+            'type' => 'sometimes|required|string|in:mcq,true_false',
             'marks' => 'sometimes|required|integer',
             'options' => 'sometimes|required_if:type,mcq|array',
             'options.*' => 'sometimes|required_if:type,mcq|string',
@@ -31,7 +31,6 @@ class UpdateQuestionRequest extends FormRequest
                 'sometimes',
                 'required_if:type,mcq',
                 'required_if:type,true_false',
-                'required_if:type,short_answer',
             ],
             'image' => 'nullable|image',
         ];
@@ -44,7 +43,7 @@ class UpdateQuestionRequest extends FormRequest
         });
 
         $validator->sometimes('correct_option', 'string', function ($input) {
-            return $input->type === 'mcq' || $input->type === 'short_answer';
+            return $input->type === 'mcq' ;
         });
 
         $validator->sometimes('correct_option', 'in:' . implode(',', $this->input('options', [])), function ($input) {
