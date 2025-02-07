@@ -6,19 +6,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
+use App\Models\Question;
 use App\Models\Course;
 use App\Models\CourseRegistration;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
+use App\Models\QuizResult;
+use App\Models\Answer;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class QuizController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
     }
 
     // Helper method to handle date and time logic
@@ -33,6 +39,13 @@ class QuizController extends Controller
     public function createQuiz(CreateQuizRequest $request)
     {
         $validated = $request->validated();
+        $professorId = auth()->user()->id;
+
+        // Check if the professor owns the course
+        $course = Course::findOrFail($validated['course_id']);
+        if ($course->ProfessorID !== $professorId) {
+            return response()->json(['message' => 'You do not own this course'], 403);
+        }
 
         // Ensure quiz date and time are in the future
         $quizDateTime = Carbon::parse("{$validated['quiz_date']} {$validated['start_time']}");
@@ -84,9 +97,16 @@ class QuizController extends Controller
     public function updateQuiz(UpdateQuizRequest $request, $id)
     {
         $validated = $request->validated();
+        $professorId = auth()->user()->id;
 
         try {
             $quiz = Quiz::findOrFail($id);
+
+            // Check if the professor owns the course
+            $course = Course::findOrFail($quiz->CourseID);
+            if ($course->ProfessorID !== $professorId) {
+                return response()->json(['message' => 'You do not own this course'], 403);
+            }
 
             // Prepare fields to update
             $updates = [];
@@ -132,6 +152,11 @@ class QuizController extends Controller
             }
 
             if (isset($validated['course_id'])) {
+                // Ensure the course is owned by the professor
+                $course = Course::findOrFail($validated['course_id']);
+                if ($course->ProfessorID !== $professorId) {
+                    return response()->json(['message' => 'You do not own this course'], 403);
+                }
                 $updates['CourseID'] = $validated['course_id'];
             }
 
@@ -139,6 +164,44 @@ class QuizController extends Controller
             $quiz->update($updates);
 
             return response()->json(['message' => 'Quiz updated successfully', 'data' => $quiz], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function getAllQuizzes()
+    {
+        try {
+            $professorId = auth()->user()->id;
+
+            $courses = Course::where('ProfessorID', $professorId)
+                ->select('CourseID')
+                ->get();
+
+            // Get quizzes for those courses and include CourseName
+            $quizzes = Quiz::join('courses', 'quizzes.CourseID', '=', 'courses.CourseID') // Join with courses table
+                ->whereIn('quizzes.CourseID', $courses->pluck('CourseID')) // Explicit table reference
+                ->select(
+                    'quizzes.QuizID',
+                    'quizzes.Title',
+                    'quizzes.Description',
+                    'quizzes.StartTime',
+                    'quizzes.EndTime',
+                    'quizzes.CourseID',
+                    'quizzes.Duration',
+                    'quizzes.QuizDate',
+                    'courses.CourseName'
+                )
+                ->paginate(3);
+
+            return response()->json([
+                'quizzes' => $quizzes->items(),
+                'pagination' =>
+                [
+                    'current_page' => $quizzes->currentPage(),
+                    'total_pages' => $quizzes->lastPage(),
+                    'total_items' => $quizzes->total()
+                ]
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
@@ -187,8 +250,15 @@ class QuizController extends Controller
 
     public function deleteQuiz($id)
     {
+        $professorId = auth()->user()->id;
         try {
             $quiz = Quiz::findOrFail($id);
+
+            // Check if the professor owns the course
+            $course = Course::findOrFail($quiz->CourseID);
+            if ($course->ProfessorID !== $professorId) {
+                return response()->json(['message' => 'You do not own this course'], 403);
+            }
             $quiz->delete();
 
             return response()->json(['message' => 'Quiz deleted successfully'], 200);
@@ -196,7 +266,44 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
+    
+    public function getQuizScores($quizId)
+    //for professor
+    {
+        try {
+            // Retrieve the quiz results for the specified quiz
+            $quizResults = QuizResult::where('QuizID', $quizId)->get();
+
+            if ($quizResults->isEmpty()) {
+                return response()->json(['message' => 'No results found for this quiz'], 404);
+            }
+
+            // Create an array containing the student name and score
+            $scores = $quizResults->map(function ($result) {
+                $student = User::find($result->StudentID); // Retrieve the student data
+                return [
+                    'student_name' => $student ? $student->name : 'Unknown', // Get the student name or show "Unknown"
+                    'score' => $result->Score,
+                    'percentage' => $result->Percentage,
+                    'passed' => $result->Passed,
+                ];
+            });
+
+            // Return the result
+            return response()->json([
+                'quiz_id' => $quizId,
+                'students_scores' => $scores,
+            ]);
+        } catch (\Exception $e) {
+            // Catch any exceptions and return an error message
+            return response()->json([
+                'message' => 'An error occurred while retrieving the quiz scores.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function getStudentQuizzes()
+    //for student
     {
         try {
             $studentId = auth()->user()->id;
@@ -221,9 +328,6 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
-
-
-
     public function startQuiz($id)
     {
         try {
@@ -268,5 +372,93 @@ class QuizController extends Controller
     private function hasStudentStartedQuiz($studentId, $quizId)
     {
         return StudentQuiz::where('student_id', $studentId)->where('quiz_id', $quizId)->exists();
+    }
+    public function submitQuiz(Request $request, $quizId)
+    {
+        $validated = $request->validate([
+            'answers' => 'required|array', // Ensure answers are provided as an array
+            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
+            'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $studentId = auth()->user()->id;
+            $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
+            $totalScore = 0; // Initialize total score
+
+            foreach ($validated['answers'] as $answerData) {
+                $question = Question::with('answers')->findOrFail($answerData['question_id']);
+
+                // Retrieve the selected answer
+                $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
+                    ->where('QuestionID', $question->QuestionID)
+                    ->firstOrFail();
+
+                // Award marks if the answer is correct
+                if ($selectedAnswer->IsCorrect) {
+                    $totalScore += $question->Marks;
+                }
+
+                // Store the student's answer
+                StudentAnswer::create([
+                    'StudentId' => $studentId,
+                    'QuestionId' => $question->QuestionID,
+                    'SelectedAnswerId' => $selectedAnswer->AnswerID,
+                ]);
+            }
+
+            // Calculate the total marks for the quiz
+            $maxScore = Question::where('QuizID', $quizId)->sum('Marks');
+            $percentage = ($maxScore > 0) ? ($totalScore / $maxScore) * 100 : 0;
+            $passed = $percentage >= 50; // Consider 50% as the passing mark
+
+            // Store the student's quiz result
+            QuizResult::create([
+                'Score' => $totalScore,
+                'Percentage' => $percentage,
+                'Passed' => $passed,
+                'SubmittedAt' => now(),
+                'StudentID' => $studentId,
+                'QuizID' => $quiz->QuizID,
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Quiz submitted successfully',
+                
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function getQuizResult($quizId)
+    //for student
+    {
+        try {
+            $user = auth()->user()->id; // Get the authenticated user
+
+            // Find the quiz result for the student
+            $quizResult = QuizResult::where('QuizID', $quizId)->where('StudentID', $user)->first();
+
+            if (!$quizResult) {
+                return response()->json(['message' => 'No quiz result found'], 404);
+            }
+
+            // Return the result with pass/fail status
+            return response()->json([
+                'score' => $quizResult->Score,
+                'percentage' => $quizResult->Percentage,
+                'passed' => $quizResult->Passed,
+            ]);
+        } catch (\Exception $e) {
+            // Catch any exceptions and return an error message
+            return response()->json([
+                'message' => 'An error occurred while retrieving the quiz result.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

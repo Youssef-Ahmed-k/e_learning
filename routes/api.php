@@ -91,9 +91,11 @@ Route::group([
     'prefix' => 'professor'
 ], function ($router) {
     Route::get('courses', [ProfessorController::class, 'viewRegisteredCourses']);
+    Route::get('getCoursesWithResults', [ProfessorController::class, 'getCoursesWithResults']);
     Route::post('materials', [ProfessorController::class, 'uploadCourseMaterial']);
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
+    Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
 });
 
 Route::group([
@@ -109,7 +111,10 @@ Route::group([
     Route::get('get-questions/{id}', [QuestionController::class, 'getQuizQuestions']);
     Route::get('course-quizzes/{courseId}', [QuizController::class, 'getCourseQuizzes']);
     Route::get('get-quiz/{id}', [QuizController::class, 'getQuiz']);
+    Route::get('get-quizzes', [QuizController::class, 'getAllQuizzes']);
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
     Route::get('start-quiz/{id}', [QuizController::class, 'startQuiz']);
-
+    Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
+    Route::get('getQuizResult/{id}',[QuizController::class, 'getQuizResult']);
+    Route::get('getQuizScores/{id}',[QuizController::class, 'getQuizScores']);
 });

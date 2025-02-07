@@ -138,6 +138,8 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized or Student not found'], 403);
         }
 
+        $student->suspensions()->where('StudentID', $student->id)->delete();
+
         $student->update([
             'is_suspended' => true,
         ]);

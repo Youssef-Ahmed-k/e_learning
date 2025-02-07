@@ -9,6 +9,7 @@ use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
+use App\Models\QuizResult;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,10 +25,10 @@ class ProfessorController extends Controller
     private function handleFileUpload(Request $request, $type, $oldPath = null)
     {
         if ($oldPath) {
-            Storage::delete($oldPath);
+            Storage::disk('public')->delete($oldPath);
         }
 
-        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos');
+        return $request->file($type)->store($type === 'file' ? 'course_materials' : 'course_videos', 'public');
     }
 
     // view all registered courses
@@ -104,10 +105,10 @@ class ProfessorController extends Controller
 
             // Delete the material file and video from storage
             if ($material->FilePath) {
-                Storage::delete($material->FilePath);
+                Storage::disk('public')->delete($material->FilePath);
             }
             if ($material->VideoPath) {
-                Storage::delete($material->VideoPath);
+                Storage::disk('public')->delete($material->VideoPath);
             }
 
             // Delete the material record from the database
@@ -171,4 +172,98 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+
+    public function getCourseMaterials($course_id)
+    {
+        try {
+            // Ensure the authenticated professor is assigned to the course
+            $course = Course::where('CourseID', $course_id)
+                ->where('ProfessorID', auth()->id())
+                ->first();
+
+            if (!$course) {
+                return response()->json(['message' => 'Unauthorized access to course materials'], 403);
+            }
+
+            $materials = Material::where('CourseID', $course_id)->get();
+
+            // Add file and video URLs
+            foreach ($materials as $material) {
+                if ($material->FilePath) {
+                    $material->FilePath = Storage::url($material->FilePath);
+                }
+                if ($material->VideoPath) {
+                    $material->VideoPath = Storage::url($material->VideoPath);
+                }
+            }
+            
+            return response()->json(['data' => $materials], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function getCoursesWithResults()
+    {
+        try {
+            // Get the authenticated professor user from the token
+            $professor = auth()->user(); // هنا نجيب كائن الـ user نفسه مش الـ id فقط
+    
+            // Retrieve all courses that the professor is teaching
+            $courses = $professor->courses; // نستخدم العلاقة hasMany بين الـ User و الـ Course
+    
+            if ($courses->isEmpty()) {
+                return response()->json(['message' => 'No courses found for this professor'], 404);
+            }
+    
+            // Map each course with its quizzes and student results
+            $coursesData = $courses->map(function ($course) {
+                // Get quizzes for the current course
+                $quizzes = $course->quizzes; // العلاقة بين الـ Course و الـ Quiz
+    
+                // Map each quiz with its student results
+                $quizzesData = $quizzes->map(function ($quiz) {
+                    // Get quiz results for the specific quiz
+                    $quizResults = $quiz->quizResults; // العلاقة بين الـ Quiz و الـ QuizResult
+    
+                    // Map each student's result
+                    $studentsScores = $quizResults->map(function ($result) {
+                        $student = $result->student; // الوصول إلى الطالب من خلال العلاقة بين QuizResult و User
+                        return [
+                            'student_name' => $student ? $student->name : 'Unknown', 
+                            'score' => $result->Score,
+                            'percentage' => $result->Percentage,
+                            'passed' => $result->Passed,
+                        ];
+                    });
+    
+                    return [
+                        'quiz_id' => $quiz->QuizID,
+                        'quiz_name' => $quiz->Title, 
+                        'students_scores' => $studentsScores, 
+                    ];
+                });
+    
+                return [
+                    'course_id' => $course->CourseID,
+                    'course_name' => $course->CourseName, 
+                    'quizzes' => $quizzesData,
+                ];
+            });
+    
+            // Return courses, quizzes, and student results
+            return response()->json([
+                'courses' => $coursesData,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving professor courses and results.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
+    
 }

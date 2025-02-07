@@ -13,8 +13,9 @@ class CourseController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:admin')->except('getAllCoursesWithProfessors');
+        $this->middleware('role:admin')->except('getAllCoursesWithProfessors', 'getStudentsInCourse');
         $this->middleware('role:user')->only('getAllCoursesWithProfessors');
+        $this->middleware('role:professor')->only('getStudentsInCourse');
     }
 
     // view all students registered for a specific course
@@ -22,9 +23,16 @@ class CourseController extends Controller
     {
         $students = CourseRegistration::with('student')
             ->where('CourseID', $courseID)
-            ->get();
+            ->paginate(10);
 
-        return response()->json(['students' => $students]);
+        return response()->json([
+            'data' => $students->items(),
+            'pagination' => [
+                "current_page" => $students->currentPage(),
+                "total_pages" => $students->lastPage(),
+                "total_items" => $students->total(),
+            ]
+        ]);
     }
 
     // get course details with professor name and materials
