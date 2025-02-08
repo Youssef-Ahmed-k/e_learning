@@ -19,6 +19,21 @@ class Question extends Model
         'QuizID',
     ];
 
+    public static function boot()
+    {
+        parent::boot();
+
+        // When a question is created or updated, recalculate the quiz's total marks
+        static::saved(function ($question) {
+            $question->quiz->calculateTotalMarks();
+        });
+
+        // When a question is deleted, recalculate the quiz's total marks
+        static::deleted(function ($question) {
+            $question->quiz->calculateTotalMarks();
+        });
+    }
+
     public function quiz()
     {
         return $this->belongsTo(Quiz::class, 'QuizID', 'QuizID');
