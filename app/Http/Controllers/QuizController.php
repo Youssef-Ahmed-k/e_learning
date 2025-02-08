@@ -234,9 +234,23 @@ class QuizController extends Controller
     public function getQuiz($id)
     {
         try {
-            $quiz = Quiz::with('questions.answers')->findOrFail($id);
-
-            return response()->json(['quiz' => $quiz], 200);
+            $quiz = Quiz::findOrFail($id);
+    
+            // Paginate questions and load answers
+            $paginatedQuestions = $quiz->questions()->with('answers')->paginate(5);
+    
+            // Manually append paginated questions to the quiz object
+            $quiz->questions = $paginatedQuestions->items(); // Extract current page items
+    
+            return response()->json([
+                'quiz' => $quiz,
+                'pagination' => [
+                    'current_page' => $paginatedQuestions->currentPage(),
+                    'total_pages' => $paginatedQuestions->lastPage(),
+                    'per_page' => $paginatedQuestions->perPage(),
+                    'total_items' => $paginatedQuestions->total()
+                ]
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
