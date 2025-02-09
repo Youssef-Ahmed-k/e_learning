@@ -125,5 +125,6 @@ Route::group([
     'prefix' => 'notification'
 ], function ($router) {
     Route::get('/notifications', [NotificationController::class, 'getUserNotifications']);
+    Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
 
 });
