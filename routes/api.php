@@ -128,5 +128,6 @@ Route::group([
     Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
     Route::post('/notifications/read/{id}', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'deleteNotification']);
 
 });
