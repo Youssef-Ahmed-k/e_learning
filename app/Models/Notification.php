@@ -15,6 +15,7 @@ class Notification extends Model
         'Message',
         'SendAt',
         'RecipientID',
+        'ReadAt',
     ];
 
     public function recipient()
