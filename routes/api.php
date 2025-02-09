@@ -11,6 +11,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,4 +118,12 @@ Route::group([
     Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
     Route::get('getQuizResult/{id}',[QuizController::class, 'getQuizResult']);
     Route::get('getQuizScores/{id}',[QuizController::class, 'getQuizScores']);
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'notification'
+], function ($router) {
+    Route::get('/notifications', [NotificationController::class, 'getUserNotifications']);
+
 });
