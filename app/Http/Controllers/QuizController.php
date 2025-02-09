@@ -97,7 +97,7 @@ class QuizController extends Controller
 
             foreach ($students as $student) {
                 Notification::create([
-                    'Message' => "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$quiz->StartTime}.",
+                    'Message' => "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$validated['start_time']}.",
                     'SendAt' => now(),
                     'RecipientID' => $student->id,
                 ]);
