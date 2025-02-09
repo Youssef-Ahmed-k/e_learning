@@ -38,7 +38,7 @@ class UpdateQuestionRequest extends FormRequest
 
     public function withValidator($validator)
     {
-        $validator->sometimes('correct_option', 'in:true,false,1,0', function ($input) {
+        $validator->sometimes('correct_option', 'in:true,false,1,0,True,False', function ($input) {
             return $input->type === 'true_false';
         });
 
