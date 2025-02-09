@@ -131,6 +131,9 @@ class QuestionController extends Controller
                 $this->updateAnswers($validated, $question);
             }
 
+            // Recalculate total marks for the quiz
+            $question->quiz->calculateTotalMarks();
+
             DB::commit();
 
             return response()->json(['message' => 'Question updated successfully', 'question' => $question], 200);

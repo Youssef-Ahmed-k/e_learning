@@ -20,6 +20,7 @@ class Quiz extends Model
         'QuizDate',
         'LockdownEnabled',
         'CourseID',
+        'TotalMarks',
     ];
 
     public function course()
@@ -40,5 +41,11 @@ class Quiz extends Model
     public function cheatingLogs()
     {
         return $this->hasMany(CheatingLog::class, 'QuizID', 'QuizID');
+    }
+
+    public function calculateTotalMarks()
+    {
+        $this->TotalMarks = $this->questions()->sum('Marks');
+        $this->save();
     }
 }
