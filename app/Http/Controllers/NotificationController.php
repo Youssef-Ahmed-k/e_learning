@@ -63,4 +63,20 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
     }
+    public function markAllAsRead()
+    {
+        try {
+            // Get the authenticated user's ID
+            $user_id = auth()->user()->id;
+
+            // Update all unread notifications
+            Notification::where('RecipientID', $user_id)
+                ->whereNull('ReadAt')
+                ->update(['ReadAt' => now()]);
+
+            return response()->json(['message' => 'All notifications marked as read']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
+        }
+    }
 }
