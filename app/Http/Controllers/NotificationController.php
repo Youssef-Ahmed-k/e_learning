@@ -38,7 +38,7 @@ class NotificationController extends Controller
 
             // Fetch only unread notifications (ReadAt is NULL)
             $notifications = Notification::where('RecipientID', $user_id)
-                ->whereNull('ReadAt')
+                ->where('is_read', false)
                 ->orderBy('SendAt', 'desc')
                 ->select('Message', 'SendAt') 
                 ->get();
@@ -56,7 +56,7 @@ class NotificationController extends Controller
                 ->findOrFail($notification_id);
 
             // Mark the notification as read
-            $notification->update(['ReadAt' => now()]);
+            $notification->update(['is_read' => true]);
 
             return response()->json(['message' => 'Notification marked as read']);
         } catch (\Exception $e) {
@@ -71,8 +71,8 @@ class NotificationController extends Controller
 
             // Update all unread notifications
             Notification::where('RecipientID', $user_id)
-                ->whereNull('ReadAt')
-                ->update(['ReadAt' => now()]);
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
 
             return response()->json(['message' => 'All notifications marked as read']);
         } catch (\Exception $e) {
