@@ -94,4 +94,18 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
     }
+    public function deleteAllNotifications()
+    {
+        try {
+            // Get the authenticated user's ID
+            $user_id = auth()->user()->id;
+
+            // Delete all notifications for the user
+            Notification::where('RecipientID', $user_id)->delete();
+
+            return response()->json(['message' => 'All notifications deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
+        }
+    }
 }
