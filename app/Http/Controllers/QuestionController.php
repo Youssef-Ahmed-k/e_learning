@@ -76,14 +76,14 @@ class QuestionController extends Controller
 
         // Convert correct_option to boolean for true_false type
         if (isset($validated['type']) && $validated['type'] === 'true_false') {
-            $validated['correct_option'] = filter_var(
-                strtolower($validated['correct_option']),
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-
-            // Ensure the correct_option is a valid boolean
-            if ($validated['correct_option'] === null) {
+            $correctOption = strtolower($validated['correct_option']);
+            
+            // Normalize true/false values
+            if (in_array($correctOption, ['true', '1'], true)) {
+                $validated['correct_option'] = true;
+            } elseif (in_array($correctOption, ['false', '0'], true)) {
+                $validated['correct_option'] = false;
+            } else {
                 return response()->json([
                     'message' => 'Invalid correct_option value for true/false question.',
                 ], 422);
