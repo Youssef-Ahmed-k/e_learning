@@ -30,4 +30,22 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
     }
+    public function getUnreadNotifications()
+    {
+        try {
+            // Get the authenticated user's ID
+            $user_id = auth()->user()->id;
+
+            // Fetch only unread notifications (ReadAt is NULL)
+            $notifications = Notification::where('RecipientID', $user_id)
+                ->whereNull('ReadAt')
+                ->orderBy('SendAt', 'desc')
+                ->select('Message', 'SendAt') 
+                ->get();
+
+            return response()->json(['notifications' => $notifications]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
+        }
+    }
 }
