@@ -9,6 +9,7 @@ use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Course;
 use App\Models\CourseRegistration;
+use App\Models\Notification;
 use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
 use App\Models\QuizResult;
@@ -88,6 +89,19 @@ class QuizController extends Controller
                 'LockdownEnabled' => $lockdownEnabled,
                 'CourseID' => $validated['course_id'],
             ]);
+                // *** Send notifications to students enrolled in the course ***
+                $students = User::where('role', 'user') // Select only students
+                ->whereHas('courseRegistrations', function ($query) use ($validated) {
+                    $query->where('CourseID', $validated['course_id']);
+                })->get();
+
+            foreach ($students as $student) {
+                Notification::create([
+                    'Message' => "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$quiz->StartTime}.",
+                    'SendAt' => now(),
+                    'RecipientID' => $student->id,
+                ]);
+            }    
 
             return response()->json(['message' => 'Quiz created successfully'], 201);
         } catch (\Exception $e) {
