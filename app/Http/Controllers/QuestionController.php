@@ -77,7 +77,7 @@ class QuestionController extends Controller
         // Convert correct_option to boolean for true_false type
         if (isset($validated['type']) && $validated['type'] === 'true_false') {
             $correctOption = strtolower($validated['correct_option']);
-            
+
             // Normalize true/false values
             if (in_array($correctOption, ['true', '1'], true)) {
                 $validated['correct_option'] = true;
@@ -228,10 +228,79 @@ class QuestionController extends Controller
 
     protected function updateAnswers($validated, $question)
     {
-        // Delete existing answers
-        Answer::where('QuestionID', $question->QuestionID)->delete();
+        switch ($validated['type']) {
+            case 'mcq':
+                // Get existing answers
+                $existingAnswers = Answer::where('QuestionID', $question->QuestionID)->get();
+                $existingCount = $existingAnswers->count();
+                $newCount = count($validated['options']);
 
-        // Save new answers
-        $this->saveAnswers($validated, $question);
+                // Update existing answers
+                foreach ($validated['options'] as $index => $option) {
+                    if ($index < $existingCount) {
+                        // Update existing answer
+                        $existingAnswers[$index]->update([
+                            'AnswerText' => $option,
+                            'IsCorrect' => $option === $validated['correct_option']
+                        ]);
+                    } else {
+                        // Create new answer if we have more options than before
+                        Answer::create([
+                            'AnswerText' => $option,
+                            'IsCorrect' => $option === $validated['correct_option'],
+                            'QuestionID' => $question->QuestionID
+                        ]);
+                    }
+                }
+
+                // Delete extra answers if we have fewer options than before
+                if ($newCount < $existingCount) {
+                    Answer::where('QuestionID', $question->QuestionID)
+                        ->orderBy('id', 'desc')
+                        ->limit($existingCount - $newCount)
+                        ->delete();
+                }
+                break;
+
+            case 'true_false':
+                $existingAnswers = Answer::where('QuestionID', $question->QuestionID)->get();
+
+                // Update or create "True" answer
+                if ($existingAnswers->count() > 0) {
+                    $existingAnswers[0]->update([
+                        'AnswerText' => 'True',
+                        'IsCorrect' => $validated['correct_option'] === true ||
+                            $validated['correct_option'] === 'true' ||
+                            $validated['correct_option'] === 1
+                    ]);
+                } else {
+                    Answer::create([
+                        'AnswerText' => 'True',
+                        'IsCorrect' => $validated['correct_option'] === true ||
+                            $validated['correct_option'] === 'true' ||
+                            $validated['correct_option'] === 1,
+                        'QuestionID' => $question->QuestionID
+                    ]);
+                }
+
+                // Update or create "False" answer
+                if ($existingAnswers->count() > 1) {
+                    $existingAnswers[1]->update([
+                        'AnswerText' => 'False',
+                        'IsCorrect' => $validated['correct_option'] === false ||
+                            $validated['correct_option'] === 'false' ||
+                            $validated['correct_option'] === 0
+                    ]);
+                } else {
+                    Answer::create([
+                        'AnswerText' => 'False',
+                        'IsCorrect' => $validated['correct_option'] === false ||
+                            $validated['correct_option'] === 'false' ||
+                            $validated['correct_option'] === 0,
+                        'QuestionID' => $question->QuestionID
+                    ]);
+                }
+                break;
+        }
     }
 }
