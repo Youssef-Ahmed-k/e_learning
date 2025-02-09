@@ -8,14 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class Notification extends Model
 {
     use HasFactory;
-
+    public $timestamps = false;
     protected $primaryKey = 'NotificationID';
-
     protected $fillable = [
         'Message',
         'SendAt',
         'RecipientID',
-        'ReadAt',
+        'is_read',
     ];
 
     public function recipient()
