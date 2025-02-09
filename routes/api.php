@@ -124,10 +124,10 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'notification'
 ], function ($router) {
-    Route::get('/notifications', [NotificationController::class, 'getUserNotifications']);
-    Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
-    Route::post('/notifications/read/{id}', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::delete('/notifications/{id}', [NotificationController::class, 'deleteNotification']);
-
+    Route::get('notifications', [NotificationController::class, 'getUserNotifications']);
+    Route::get('notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
+    Route::post('notifications/read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('notifications/{id}', [NotificationController::class, 'deleteNotification']);
+    Route::delete('notifications', [NotificationController::class, 'deleteAllNotifications']);
 });
