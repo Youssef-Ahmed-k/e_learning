@@ -126,5 +126,6 @@ Route::group([
 ], function ($router) {
     Route::get('/notifications', [NotificationController::class, 'getUserNotifications']);
     Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
+    Route::post('/notifications/read/{id}', [NotificationController::class, 'markAsRead']);
 
 });
