@@ -15,6 +15,7 @@ use App\Models\StudentQuiz;
 use App\Models\QuizResult;
 use App\Models\Answer;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -89,19 +90,8 @@ class QuizController extends Controller
                 'LockdownEnabled' => $lockdownEnabled,
                 'CourseID' => $validated['course_id'],
             ]);
-                // *** Send notifications to students enrolled in the course ***
-                $students = User::where('role', 'user') // Select only students
-                ->whereHas('courseRegistrations', function ($query) use ($validated) {
-                    $query->where('CourseID', $validated['course_id']);
-                })->get();
-
-            foreach ($students as $student) {
-                Notification::create([
-                    'Message' => "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$validated['start_time']}.",
-                    'SendAt' => now(),
-                    'RecipientID' => $student->id,
-                ]);
-            }    
+            // *** Send notifications to students enrolled in the course ***
+            NotificationService::sendToCourseStudents($validated['course_id'], "A new quiz has been scheduled for {$validated['quiz_date']} at {$validated['start_time']}.");
 
             return response()->json(['message' => 'Quiz created successfully'], 201);
         } catch (\Exception $e) {
@@ -249,13 +239,13 @@ class QuizController extends Controller
     {
         try {
             $quiz = Quiz::findOrFail($id);
-    
+
             // Paginate questions and load answers
             $paginatedQuestions = $quiz->questions()->with('answers')->paginate(5);
-    
+
             // Manually append paginated questions to the quiz object
             $quiz->questions = $paginatedQuestions->items(); // Extract current page items
-    
+
             return response()->json([
                 'quiz' => $quiz,
                 'pagination' => [
