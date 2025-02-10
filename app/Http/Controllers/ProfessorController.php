@@ -130,45 +130,75 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
-    public function updateCourseMaterial(UpdateCourseMaterialRequest  $request, $material_id)
+    public function updateCourseMaterial(UpdateCourseMaterialRequest $request, $material_id)
     {
         if ($request->hasFile('file') && $request->hasFile('video')) {
             return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
         }
-
+    
         DB::beginTransaction();
         try {
             $material = Material::findOrFail($material_id);
-
+    
             if ($material->ProfessorID !== auth()->id()) {
                 return response()->json(['message' => 'You are not authorized to update this material.'], 403);
             }
-
+    
             if ($request->material_type === 'pdf' && !$request->hasFile('file')) {
                 return response()->json(['message' => 'You must upload a file for PDF materials.'], 400);
             }
-
+    
             if ($request->material_type === 'video' && !$request->hasFile('video')) {
                 return response()->json(['message' => 'You must upload a video for video materials.'], 400);
             }
-
+    
+            $updatedFields = [];
+    
             if ($request->hasFile('file')) {
                 $material->FilePath = $this->handleFileUpload($request, 'file', $material->FilePath);
                 $material->VideoPath = null;
+                $updatedFields[] = 'File';
             }
-
+    
             if ($request->hasFile('video')) {
                 $material->VideoPath = $this->handleFileUpload($request, 'video', $material->VideoPath);
                 $material->FilePath = null;
+                $updatedFields[] = 'Video';
             }
-
+    
+            if ($request->title && $request->title !== $material->Title) {
+                $updatedFields[] = 'Title';
+            }
+    
+            if ($request->description && $request->description !== $material->Description) {
+                $updatedFields[] = 'Description';
+            }
+    
+            if ($request->material_type && $request->material_type !== $material->MaterialType) {
+                $updatedFields[] = 'Material Type';
+            }
+    
             $material->update([
                 'Title' => $request->title ?? $material->Title,
                 'Description' => $request->description ?? $material->Description,
                 'MaterialType' => $request->material_type ?? $material->MaterialType,
             ]);
-
+    
             DB::commit();
+    
+            // **Get course name**
+            $course = Course::findOrFail($material->CourseID);
+            $courseName = $course->CourseName; 
+    
+            // Send notification if any field was updated
+            if (!empty($updatedFields)) {
+                $updatedFieldsList = implode(', ', $updatedFields);
+                NotificationService::sendToCourseStudents(
+                    $material->CourseID,
+                    "The course material '{$material->Title}' in the course '{$courseName}' has been updated. Changes include: {$updatedFieldsList}. Please check the new content."
+                );
+            }
+    
             return response()->json(['message' => 'Course material updated successfully', 'data' => $material], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -178,6 +208,7 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
+    
 
     public function getCourseMaterials($course_id)
     {
