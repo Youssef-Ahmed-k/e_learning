@@ -19,7 +19,7 @@ class CourseRegistrationController extends Controller
         $request->validate([
             'CourseID' => 'required|exists:courses,CourseID',
         ]);
-        
+
         $studentID = auth()->id();
         $courseID = $request->CourseID;
 
@@ -52,6 +52,33 @@ class CourseRegistrationController extends Controller
         return response()->json([
             'message' => 'Course registered successfully',
             'registration' => $registration
+        ]);
+    }
+
+    public function unregisterCourse(Request $request)
+    {
+        $request->validate([
+            'CourseID' => 'required|exists:courses,CourseID',
+        ]);
+
+        $studentID = auth()->id();
+        $courseID = $request->CourseID;
+
+        // Unregister the student from the course
+        $registration = CourseRegistration::where('StudentID', $studentID)
+            ->where('CourseID', $courseID)
+            ->first();
+
+        if (!$registration) {
+            return response()->json([
+                'message' => 'You are not registered for this course'
+            ], 400);
+        }
+
+        $registration->delete();
+
+        return response()->json([
+            'message' => 'Course unregistered successfully'
         ]);
     }
 }
