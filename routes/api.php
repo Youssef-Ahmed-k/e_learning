@@ -74,6 +74,7 @@ Route::group([
     'prefix' => 'course'
 ], function ($router) {
     Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
+    Route::post('unregisterCourse', [CourseRegistrationController::class, 'unregisterCourse']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
     Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
@@ -116,8 +117,8 @@ Route::group([
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
     Route::get('start-quiz/{id}', [QuizController::class, 'startQuiz']);
     Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
-    Route::get('getQuizResult/{id}',[QuizController::class, 'getQuizResult']);
-    Route::get('getQuizScores/{id}',[QuizController::class, 'getQuizScores']);
+    Route::get('getQuizResult/{id}', [QuizController::class, 'getQuizResult']);
+    Route::get('getQuizScores/{id}', [QuizController::class, 'getQuizScores']);
 });
 
 Route::group([
