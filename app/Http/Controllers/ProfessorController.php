@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateCourseMaterialRequest;
 use App\Models\Course;
-
+use App\Models\Notification;
 use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
@@ -80,6 +80,19 @@ class ProfessorController extends Controller
                 'CourseID' => $request->course_id,
                 'ProfessorID' => auth()->id(),
             ]);
+             //  Send notifications to students enrolled in the course 
+                $students = User::where('role', 'user') // Select only students
+                ->whereHas('courseRegistrations', function ($query) use ($request) {
+                    $query->where('CourseID', $request->course_id);
+                })->get();
+
+            foreach ($students as $student) {
+                Notification::create([
+                    'Message' => "New course material uploaded in {$course->CourseName}: {$material->Title}.",
+                    'SendAt' => now(),
+                    'RecipientID' => $student->id,
+                ]);
+            }
 
             DB::commit();
             return response()->json(['message' => 'Course material uploaded successfully', 'data' => $material], 201);
