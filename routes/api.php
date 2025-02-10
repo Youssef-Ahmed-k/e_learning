@@ -73,8 +73,8 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'course'
 ], function ($router) {
-    Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
-    Route::post('unregisterCourse', [CourseRegistrationController::class, 'unregisterCourse']);
+    Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourses']);
+    Route::post('unregisterCourse', [CourseRegistrationController::class, 'unregisterCourses']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
     Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
