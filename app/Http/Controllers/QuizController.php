@@ -92,7 +92,7 @@ class QuizController extends Controller
             ]);
             // *** Send notifications to students enrolled in the course ***
             $message = "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$validated['start_time']}.";
-            NotificationService::sendToCourseStudents($validated['course_id'], $message,'quiz');
+            NotificationService::sendToCourseStudents($validated['course_id'], $message, 'quiz');
 
             return response()->json(['message' => 'Quiz created successfully'], 201);
         } catch (\Exception $e) {
@@ -103,37 +103,37 @@ class QuizController extends Controller
     {
         $validated = $request->validated();
         $professorId = auth()->user()->id;
-    
+
         try {
             $quiz = Quiz::findOrFail($id);
-    
+
             // Check if the professor owns the course
             $course = Course::findOrFail($quiz->CourseID);
             if ($course->ProfessorID !== $professorId) {
                 return response()->json(['message' => 'You do not own this course'], 403);
             }
-    
+
             // Prepare fields to update
             $updates = [];
             $updatedFields = []; // Track updated fields for notifications
-    
+
             if (isset($validated['title'])) {
                 $updates['Title'] = $validated['title'];
                 $updatedFields[] = 'Title';
             }
-    
+
             if (isset($validated['description'])) {
                 $updates['Description'] = $validated['description'];
                 $updatedFields[] = 'Description';
             }
-    
+
             if (isset($validated['quiz_date']) && isset($validated['start_time']) && isset($validated['end_time'])) {
                 // Ensure quiz date and time are in the future
                 $quizDateTime = Carbon::parse("{$validated['quiz_date']} {$validated['start_time']}");
                 if ($quizDateTime->isPast()) {
                     return response()->json(['message' => 'Quiz date and time must be in the future'], 422);
                 }
-    
+
                 // Check for overlapping quizzes in the same course
                 $overlappingQuiz = Quiz::where('CourseID', $quiz->CourseID)
                     ->where('QuizID', '!=', $quiz->QuizID) // Exclude the current quiz
@@ -142,25 +142,25 @@ class QuizController extends Controller
                             ->orWhereBetween('EndTime', [$validated['start_time'], $validated['end_time']]);
                     })
                     ->exists();
-    
+
                 if ($overlappingQuiz) {
                     return response()->json(['message' => 'Another quiz is already scheduled during this time'], 422);
                 }
-    
+
                 // Calculate the duration automatically from start and end time
                 $startTime = Carbon::parse($validated['start_time']);
                 $endTime = Carbon::parse($validated['end_time']);
                 $duration = $endTime->diffInMinutes($startTime);
-    
+
                 $updates['Duration'] = $duration;
                 $dates = $this->formatQuizDateTime($validated['quiz_date'], $validated['start_time'], $validated['end_time']);
                 $updates['StartTime'] = $dates['start'];
                 $updates['EndTime'] = $dates['end'];
                 $updates['QuizDate'] = $validated['quiz_date'];
-    
+
                 $updatedFields[] = 'Date & Time';
             }
-    
+
             if (isset($validated['course_id'])) {
                 // Ensure the course is owned by the professor
                 $course = Course::findOrFail($validated['course_id']);
@@ -170,23 +170,23 @@ class QuizController extends Controller
                 $updates['CourseID'] = $validated['course_id'];
                 $updatedFields[] = 'Course';
             }
-    
+
             // Update the quiz with the prepared fields
             $quiz->update($updates);
-    
+
             // Send notification if any field was updated
             if (!empty($updatedFields)) {
                 $updatedFieldsList = implode(', ', $updatedFields);
                 $message = "The Quiz '{$quiz->Title}' has been updated. Changes include: {$updatedFieldsList}. Please review the new details.";
-                NotificationService::sendToCourseStudents($quiz->CourseID,$message, 'quiz');
+                NotificationService::sendToCourseStudents($quiz->CourseID, $message, 'quiz');
             }
-    
+
             return response()->json(['message' => 'Quiz updated successfully', 'data' => $quiz], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
-    
+
     public function getAllQuizzes()
     {
         try {
@@ -338,9 +338,21 @@ class QuizController extends Controller
             // Get courses the student is enrolled in
             $courses = CourseRegistration::where('StudentID', $studentId)->pluck('CourseID');
 
-            // Get quizzes for the courses the student is enrolled in
-            $quizzes = Quiz::whereIn('CourseID', $courses)
-                ->select('QuizID', 'Title', 'Description', 'StartTime', 'EndTime', 'CourseID', 'Duration', 'QuizDate')
+            // Get quizzes for the enrolled courses along with course name and code
+            $quizzes = Quiz::join('courses', 'quizzes.CourseID', '=', 'courses.CourseID') // Join with courses table
+                ->whereIn('quizzes.CourseID', $courses) // Specify table for CourseID
+                ->select(
+                    'quizzes.QuizID',
+                    'quizzes.Title',
+                    'quizzes.Description',
+                    'quizzes.StartTime',
+                    'quizzes.EndTime',
+                    'quizzes.CourseID',
+                    'quizzes.Duration',
+                    'quizzes.QuizDate',
+                    'courses.CourseName',
+                    'courses.CourseCode'
+                )
                 ->get();
 
             // Filter out quizzes the student has already started or quizzes whose end time has passed
