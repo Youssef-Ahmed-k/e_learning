@@ -11,6 +11,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,7 +73,8 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'course'
 ], function ($router) {
-    Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourse']);
+    Route::post('registerCourse', [CourseRegistrationController::class, 'registerCourses']);
+    Route::post('unregisterCourse', [CourseRegistrationController::class, 'unregisterCourses']);
     Route::get('{courseID}/students', [CourseController::class, 'getStudentsInCourse']);
     Route::get('{courseID}', [CourseController::class, 'getCourseDetails']);
     Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
@@ -115,6 +117,18 @@ Route::group([
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
     Route::get('start-quiz/{id}', [QuizController::class, 'startQuiz']);
     Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
-    Route::get('getQuizResult/{id}',[QuizController::class, 'getQuizResult']);
-    Route::get('getQuizScores/{id}',[QuizController::class, 'getQuizScores']);
+    Route::get('getQuizResult/{id}', [QuizController::class, 'getQuizResult']);
+    Route::get('getQuizScores/{id}', [QuizController::class, 'getQuizScores']);
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'notification'
+], function ($router) {
+    Route::get('notifications', [NotificationController::class, 'getUserNotifications']);
+    Route::get('notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
+    Route::post('notifications/read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('notifications/{id}', [NotificationController::class, 'deleteNotification']);
+    Route::delete('notifications', [NotificationController::class, 'deleteAllNotifications']);
 });
