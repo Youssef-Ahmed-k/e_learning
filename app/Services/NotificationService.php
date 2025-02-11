@@ -7,7 +7,7 @@ use App\Models\User;
 
 class NotificationService
 {
-  public static function sendToCourseStudents($course_id, $message, $type)
+    public static function sendToCourseStudents($course_id, $message, $type)
     {
         $students = User::where('role', 'user')
             ->whereHas('courseRegistrations', function ($query) use ($course_id) {
@@ -19,8 +19,8 @@ class NotificationService
                 'Message' => $message,
                 'SendAt' => now(),
                 'RecipientID' => $student->id,
-                'type' => $type, 
-                'CourseID' => $course_id, 
+                'type' => $type,
+                'CourseID' => $course_id,
             ]);
         }
     }
