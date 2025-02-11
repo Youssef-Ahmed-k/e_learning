@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -22,7 +23,7 @@ class NotificationController extends Controller
             // Fetch all notifications for the user, sorted by latest
             $notifications = Notification::where('RecipientID', $user_id)
                 ->orderBy('SendAt', 'desc')
-                ->select('Message', 'SendAt') 
+                ->select('Message', 'SendAt','Type','CourseID') 
                 ->get();
 
             return response()->json(['notifications' => $notifications]);
@@ -40,7 +41,7 @@ class NotificationController extends Controller
             $notifications = Notification::where('RecipientID', $user_id)
                 ->where('is_read', false)
                 ->orderBy('SendAt', 'desc')
-                ->select('Message', 'SendAt') 
+                ->select('Message', 'SendAt','Type','CourseID') 
                 ->get();
 
             return response()->json(['notifications' => $notifications]);
@@ -56,7 +57,7 @@ class NotificationController extends Controller
                 ->findOrFail($notification_id);
 
             // Mark the notification as read
-            $notification->update(['is_read' => true]);
+            $notification->update(['is_read' => 1, 'SendAt' => DB::raw('SendAt')]);
 
             return response()->json(['message' => 'Notification marked as read']);
         } catch (\Exception $e) {
@@ -72,7 +73,7 @@ class NotificationController extends Controller
             // Update all unread notifications
             Notification::where('RecipientID', $user_id)
             ->where('is_read', false)
-            ->update(['is_read' => true]);
+            ->update(['is_read' => 1, 'SendAt' => DB::raw('SendAt')]);
 
             return response()->json(['message' => 'All notifications marked as read']);
         } catch (\Exception $e) {
