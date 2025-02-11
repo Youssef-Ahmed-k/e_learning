@@ -84,7 +84,7 @@ class ProfessorController extends Controller
             //  Send notifications to students enrolled in the course 
             NotificationService::sendToCourseStudents(
                 $course->CourseID,
-                'New course material uploaded in {$course->CourseName}: {$material->Title}.'
+                "New course material uploaded in {$course->CourseName}: {$material->Title}.",'material'
             );
 
             DB::commit();
@@ -195,7 +195,7 @@ class ProfessorController extends Controller
                 $updatedFieldsList = implode(', ', $updatedFields);
                 NotificationService::sendToCourseStudents(
                     $material->CourseID,
-                    "The course material '{$material->Title}' in the course '{$courseName}' has been updated. Changes include: {$updatedFieldsList}. Please check the new content."
+                    "The course material '{$material->Title}' in the course '{$courseName}' has been updated. Changes include: {$updatedFieldsList}. Please check the new content.",'material'
                 );
             }
     

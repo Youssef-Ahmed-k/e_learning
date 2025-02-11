@@ -92,7 +92,7 @@ class QuizController extends Controller
             ]);
             // *** Send notifications to students enrolled in the course ***
             $message = "New Quiz in {$course->CourseName}: {$quiz->Title} is scheduled on {$quiz->QuizDate} at {$validated['start_time']}.";
-            NotificationService::sendToCourseStudents($validated['course_id'], $message);
+            NotificationService::sendToCourseStudents($validated['course_id'], $message,'quiz');
 
             return response()->json(['message' => 'Quiz created successfully'], 201);
         } catch (\Exception $e) {
@@ -178,7 +178,7 @@ class QuizController extends Controller
             if (!empty($updatedFields)) {
                 $updatedFieldsList = implode(', ', $updatedFields);
                 $message = "The Quiz '{$quiz->Title}' has been updated. Changes include: {$updatedFieldsList}. Please review the new details.";
-                NotificationService::sendToCourseStudents($quiz->CourseID,$message);
+                NotificationService::sendToCourseStudents($quiz->CourseID,$message, 'quiz');
             }
     
             return response()->json(['message' => 'Quiz updated successfully', 'data' => $quiz], 200);
