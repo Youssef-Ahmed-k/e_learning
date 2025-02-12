@@ -410,11 +410,33 @@ class QuizController extends Controller
                 'student_id' => $studentId,
                 'quiz_id' => $id,
             ]);
-    
+            $quizData = [
+                'Title' => $quiz->Title,
+                'Description' => $quiz->Description,
+                'Duration' => $quiz->Duration,
+                'StartTime' => $quiz->StartTime,
+                'EndTime' => $quiz->EndTime,
+                'QuizDate' => $quiz->QuizDate,
+                'TotalMarks' => $quiz->TotalMarks,
+                'CourseName' => $quiz->course->CourseName,
+                'CourseCode' => $quiz->course->CourseCode,
+                'questions' => $quiz->questions->map(function ($question) {
+                    return [
+                        'Content' => $question->Content,
+                        'Type' => $question->Type,
+                        'Marks' => $question->Marks,
+                        'answers' => $question->answers->map(function ($answer) {
+                            return [
+                                'AnswerText' => $answer->AnswerText
+                            ];
+                        }),
+                    ];
+                }),
+            ];
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz started successfully',
-                'quiz' => $quiz
+                'quiz' => $quizData
             ], 200);
     
         } catch (\Exception $e) {
