@@ -374,10 +374,10 @@ class QuizController extends Controller
         try {
             $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
-            // Get current time
-            $currentDateTime = Carbon::now();
-            $startTime = Carbon::parse($quiz->StartTime);
-            $endTime = Carbon::parse($quiz->EndTime);
+            // Get current time in Egypt timezone
+            $currentDateTime = Carbon::now('Africa/Cairo');
+            $startTime = Carbon::parse($quiz->StartTime)->setTimezone('Africa/Cairo');
+            $endTime = Carbon::parse($quiz->EndTime)->setTimezone('Africa/Cairo');
 
             // Check if the quiz is not yet active
             if ($currentDateTime->lt($startTime)) {
@@ -404,7 +404,11 @@ class QuizController extends Controller
                 'quiz_id' => $id,
             ]);
 
-            return response()->json(['quiz' => $quiz], 200);
+            return response()->json([
+                'status' => 200,
+                'message' => 'Quiz started successfully',
+                'quiz' => $quiz
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
@@ -467,8 +471,8 @@ class QuizController extends Controller
 
             DB::commit();
             return response()->json([
+                'status' => 200,
                 'message' => 'Quiz submitted successfully',
-
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
