@@ -25,8 +25,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults']]);
     }
 
     // Helper method to handle date and time logic
@@ -506,4 +506,40 @@ class QuizController extends Controller
             ], 500);
         }
     }
+    public function getStudentQuizzesWithResults()
+{
+    try {
+        $studentId = auth()->user()->id;
+        // Retrieve quizzes taken by the student with related quiz details and results
+        $quizzes = StudentQuiz::where('student_id', $studentId)
+            ->with([
+                'quiz' => function ($query) {
+                    $query->select('Title', 'Description', 'TotalMarks', 'CourseID');
+                },
+                'quiz.course' => function ($query) {
+                    $query->select('CourseID', 'CourseName', 'CourseCode');
+                },
+                'quiz.quizResults' => function ($query) use ($studentId) {
+                    $query->where('StudentID', $studentId)
+                          ->select('Score', 'Percentage', 'Passed', 'SubmittedAt');
+                }
+            ])
+            ->get()
+            ->makeHidden(['id', 'student_id', 'quiz_id']); // Hide unnecessary fields
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student quizzes retrieved successfully',
+            'data' => $quizzes
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Handle any unexpected errors
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while retrieving student quizzes',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
