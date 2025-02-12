@@ -14,7 +14,8 @@ class QuestionController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor');
+        $this->middleware('role:professor')->except('getQuizQuestions');
+        $this->middleware('role:user')->only('getQuizQuestions');
     }
 
     public function addQuestion(AddQuestionRequest $request)
