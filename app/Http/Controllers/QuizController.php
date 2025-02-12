@@ -373,12 +373,12 @@ class QuizController extends Controller
     {
         try {
             $quiz = Quiz::with('questions.answers')->findOrFail($id);
-
+    
             // Get current time in Egypt timezone
             $currentDateTime = Carbon::now('Africa/Cairo');
             $startTime = Carbon::parse($quiz->StartTime)->setTimezone('Africa/Cairo');
             $endTime = Carbon::parse($quiz->EndTime)->setTimezone('Africa/Cairo');
-
+    
             // Check if the quiz is not yet active
             if ($currentDateTime->lt($startTime)) {
                 $remainingTime = $currentDateTime->diffForHumans($startTime);
@@ -386,33 +386,45 @@ class QuizController extends Controller
                     'message' => "Quiz will start in $remainingTime"
                 ], 403);
             }
-
+    
             // Check if the quiz has already ended
             if ($currentDateTime->gt($endTime)) {
                 return response()->json(['message' => 'Quiz has already ended'], 403);
             }
-
-            // Check if the student has already started the quiz
+    
+            // Get student ID
             $studentId = auth()->user()->id;
-            if ($this->hasStudentStartedQuiz($studentId, $id)) {
-                return response()->json(['message' => 'You have already started this quiz'], 403);
+    
+            // Check if the student has already submitted this quiz
+            $existingResult = QuizResult::where('StudentID', $studentId)
+                ->where('QuizID', $id)
+                ->whereNotNull('SubmittedAt') // Ensure the quiz was submitted
+                ->first();
+    
+            if ($existingResult) {
+                return response()->json(['message' => 'You have already completed this quiz and cannot start again'], 403);
             }
-
-            // Record that the student has started the quiz
-            StudentQuiz::create([
+    
+            // Record that the student has started the quiz (only if it's the first time)
+            StudentQuiz::firstOrCreate([
                 'student_id' => $studentId,
                 'quiz_id' => $id,
             ]);
-
+    
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz started successfully',
                 'quiz' => $quiz
             ], 200);
+    
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+    
 
     private function hasStudentStartedQuiz($studentId, $quizId)
     {
