@@ -25,8 +25,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
     }
 
     // Helper method to handle date and time logic
@@ -554,4 +554,61 @@ class QuizController extends Controller
         ], 500);
     }
 }
+public function compareStudentAnswers($quizId)
+{
+    try {
+        // Fetch the quiz with its questions and answers
+        $quiz = Quiz::with(['questions.answers'])->findOrFail($quizId);
+
+        // Get the authenticated student ID
+        $studentId = auth()->id();
+        if (!$studentId) {
+            return response()->json(['status' => 401, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Fetch student answers for this quiz
+        $studentAnswers = StudentAnswer::whereIn('QuestionID', $quiz->questions->pluck('QuestionID')->toArray())
+            ->where('StudentID', $studentId)
+            ->get()
+            ->keyBy('QuestionID'); // Index by question ID for quick lookup
+
+        // Debugging: Check if student answers exist
+        if ($studentAnswers->isEmpty()) {
+            return response()->json(['status' => 404, 'message' => 'No student answers found'], 404);
+        }
+
+        // Prepare response data
+        $questionsComparison = $quiz->questions->map(function ($question) use ($studentAnswers) {
+            $correctAnswerId = $question->answers->firstWhere('IsCorrect', true)?->AnswerID;
+            $studentAnswer = $studentAnswers->get($question->QuestionID);
+
+            return [
+                'question_text' => $question->Content,
+                'answers' => $question->answers->map(function ($answer) use ($correctAnswerId, $studentAnswer) {
+                    return [
+                        'answer_text' => $answer->AnswerText,
+                        'is_correct' => $answer->AnswerID == $correctAnswerId,
+                        'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID
+                    ];
+                }),
+                'student_selected_correct' => optional($studentAnswer)->SelectedAnswerID == $correctAnswerId
+            ];
+        });
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Quiz answers compared successfully',
+            'quiz_title' => $quiz->Title,
+            'questions' => $questionsComparison
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 500,
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
