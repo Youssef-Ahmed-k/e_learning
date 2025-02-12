@@ -25,8 +25,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
     }
 
     // Helper method to handle date and time logic
@@ -373,12 +373,12 @@ class QuizController extends Controller
     {
         try {
             $quiz = Quiz::with('questions.answers')->findOrFail($id);
-
+    
             // Get current time in Egypt timezone
             $currentDateTime = Carbon::now('Africa/Cairo');
             $startTime = Carbon::parse($quiz->StartTime)->setTimezone('Africa/Cairo');
             $endTime = Carbon::parse($quiz->EndTime)->setTimezone('Africa/Cairo');
-
+    
             // Check if the quiz is not yet active
             if ($currentDateTime->lt($startTime)) {
                 $remainingTime = $currentDateTime->diffForHumans($startTime);
@@ -386,33 +386,67 @@ class QuizController extends Controller
                     'message' => "Quiz will start in $remainingTime"
                 ], 403);
             }
-
+    
             // Check if the quiz has already ended
             if ($currentDateTime->gt($endTime)) {
                 return response()->json(['message' => 'Quiz has already ended'], 403);
             }
-
-            // Check if the student has already started the quiz
+    
+            // Get student ID
             $studentId = auth()->user()->id;
-            if ($this->hasStudentStartedQuiz($studentId, $id)) {
-                return response()->json(['message' => 'You have already started this quiz'], 403);
+    
+            // Check if the student has already submitted this quiz
+            $existingResult = QuizResult::where('StudentID', $studentId)
+                ->where('QuizID', $id)
+                ->whereNotNull('SubmittedAt') // Ensure the quiz was submitted
+                ->first();
+    
+            if ($existingResult) {
+                return response()->json(['message' => 'You have already completed this quiz and cannot start again'], 403);
             }
-
-            // Record that the student has started the quiz
-            StudentQuiz::create([
+    
+            // Record that the student has started the quiz (only if it's the first time)
+            StudentQuiz::firstOrCreate([
                 'student_id' => $studentId,
                 'quiz_id' => $id,
             ]);
-
+            $quizData = [
+                'Title' => $quiz->Title,
+                'Description' => $quiz->Description,
+                'Duration' => $quiz->Duration,
+                'StartTime' => $quiz->StartTime,
+                'EndTime' => $quiz->EndTime,
+                'QuizDate' => $quiz->QuizDate,
+                'TotalMarks' => $quiz->TotalMarks,
+                'CourseName' => $quiz->course->CourseName,
+                'CourseCode' => $quiz->course->CourseCode,
+                'questions' => $quiz->questions->map(function ($question) {
+                    return [
+                        'Content' => $question->Content,
+                        'Type' => $question->Type,
+                        'Marks' => $question->Marks,
+                        'answers' => $question->answers->map(function ($answer) {
+                            return [
+                                'AnswerText' => $answer->AnswerText
+                            ];
+                        }),
+                    ];
+                }),
+            ];
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz started successfully',
-                'quiz' => $quiz
+                'quiz' => $quizData
             ], 200);
+    
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+    
 
     private function hasStudentStartedQuiz($studentId, $quizId)
     {
@@ -506,4 +540,97 @@ class QuizController extends Controller
             ], 500);
         }
     }
+    public function getStudentQuizzesWithResults()
+{
+    try {
+        $studentId = auth()->user()->id;
+        // Retrieve quizzes taken by the student with related quiz details and results
+        $quizzes = StudentQuiz::where('student_id', $studentId)
+            ->with([
+                'quiz' => function ($query) {
+                    $query->select('Title', 'Description', 'TotalMarks', 'CourseID');
+                },
+                'quiz.course' => function ($query) {
+                    $query->select('CourseID', 'CourseName', 'CourseCode');
+                },
+                'quiz.quizResults' => function ($query) use ($studentId) {
+                    $query->where('StudentID', $studentId)
+                          ->select('Score', 'Percentage', 'Passed', 'SubmittedAt');
+                }
+            ])
+            ->get()
+            ->makeHidden(['id', 'student_id', 'quiz_id']); // Hide unnecessary fields
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student quizzes retrieved successfully',
+            'data' => $quizzes
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Handle any unexpected errors
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while retrieving student quizzes',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+public function compareStudentAnswers($quizId)
+{
+    try {
+        // Fetch the quiz with its questions and answers
+        $quiz = Quiz::with(['questions.answers'])->findOrFail($quizId);
+
+        // Get the authenticated student ID
+        $studentId = auth()->id();
+        if (!$studentId) {
+            return response()->json(['status' => 401, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Fetch student answers for this quiz
+        $studentAnswers = StudentAnswer::whereIn('QuestionID', $quiz->questions->pluck('QuestionID')->toArray())
+            ->where('StudentID', $studentId)
+            ->get()
+            ->keyBy('QuestionID'); // Index by question ID for quick lookup
+
+        // Debugging: Check if student answers exist
+        if ($studentAnswers->isEmpty()) {
+            return response()->json(['status' => 404, 'message' => 'No student answers found'], 404);
+        }
+
+        // Prepare response data
+        $questionsComparison = $quiz->questions->map(function ($question) use ($studentAnswers) {
+            $correctAnswerId = $question->answers->firstWhere('IsCorrect', true)?->AnswerID;
+            $studentAnswer = $studentAnswers->get($question->QuestionID);
+
+            return [
+                'question_text' => $question->Content,
+                'answers' => $question->answers->map(function ($answer) use ($correctAnswerId, $studentAnswer) {
+                    return [
+                        'answer_text' => $answer->AnswerText,
+                        'is_correct' => $answer->AnswerID == $correctAnswerId,
+                        'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID
+                    ];
+                }),
+                'student_selected_correct' => optional($studentAnswer)->SelectedAnswerID == $correctAnswerId
+            ];
+        });
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Quiz answers compared successfully',
+            'quiz_title' => $quiz->Title,
+            'questions' => $questionsComparison
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 500,
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
