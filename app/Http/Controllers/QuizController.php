@@ -350,6 +350,8 @@ class QuizController extends Controller
                     'quizzes.CourseID',
                     'quizzes.Duration',
                     'quizzes.QuizDate',
+                    'quizzes.LockdownEnabled',
+                    'quizzes.TotalMarks',
                     'courses.CourseName',
                     'courses.CourseCode'
                 )
