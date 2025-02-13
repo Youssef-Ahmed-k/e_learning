@@ -699,10 +699,7 @@ class QuizController extends Controller
 
             // Fetch quizzes where the student has taken (student_quizzes) or submitted (quiz_results)
             $quizzes = Quiz::with('course')
-                ->whereHas('studentQuizzes', function ($query) use ($studentId) {
-                    $query->where('student_id', $studentId);
-                })
-                ->orWhereHas('quizResults', function ($query) use ($studentId) {
+                ->WhereHas('quizResults', function ($query) use ($studentId) {
                     $query->where('StudentID', $studentId);
                 })
                 ->paginate(9);
