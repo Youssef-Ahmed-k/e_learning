@@ -19,6 +19,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
@@ -633,6 +634,59 @@ class QuizController extends Controller
                 'status' => 500,
                 'message' => 'Something went wrong',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getEndedQuizzesWithResults()
+    {
+        try {
+            // Get the authenticated professor's ID
+            $professorId = Auth::id();
+
+            $endedQuizzes = Quiz::with(['quizResults', 'course'])
+                ->whereHas('course', function ($query) use ($professorId) {
+                    $query->where('ProfessorID', $professorId); // Filter by professor ID
+                })
+                ->whereNotNull('EndTime')
+                ->where('EndTime', '<', Carbon::now('Africa/Cairo'))
+                ->has('quizResults')
+                ->paginate(10);
+
+            $mappedData = $endedQuizzes->through(function ($quiz) {
+                return [
+                    'quiz_details' => [
+                        'id' => $quiz->QuizID,
+                        'title' => $quiz->Title,
+                        'description' => $quiz->Description,
+                        'duration' => $quiz->Duration,
+                        'start_time' => $quiz->StartTime,
+                        'end_time' => $quiz->EndTime,
+                        'quiz_date' => $quiz->QuizDate,
+                        'total_marks' => $quiz->TotalMarks,
+                    ],
+                    'course_details' => [
+                        'id' => $quiz->course->CourseID,
+                        'name' => $quiz->course->CourseName,
+                        'code' => $quiz->course->CourseCode,
+                    ],
+                    'students_count' => $quiz->quizResults->count(),
+                ];
+            });
+
+            return response()->json([
+                'data' => $mappedData->items(),
+                'pagination' => [
+                    'current_page' => $endedQuizzes->currentPage(),
+                    'total_pages' => $endedQuizzes->lastPage(),
+                    'total_items' => $endedQuizzes->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
