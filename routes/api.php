@@ -121,7 +121,7 @@ Route::group([
     Route::get('getQuizScores/{id}', [QuizController::class, 'getQuizScores']);
     Route::get('quizzes-results', [QuizController::class, 'getStudentQuizzesWithResults']);
     Route::get('correct_answer/{id}', [QuizController::class, 'compareStudentAnswers']);
-
+    Route::get('ended-with-results', [QuizController::class, 'getEndedQuizzesWithResults']);
 });
 
 Route::group([
