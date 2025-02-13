@@ -705,7 +705,7 @@ class QuizController extends Controller
                 ->orWhereHas('quizResults', function ($query) use ($studentId) {
                     $query->where('StudentID', $studentId);
                 })
-                ->paginate(10);
+                ->paginate(9);
 
             // Format response
             $mappedData = $quizzes->through(function ($quiz) {
