@@ -26,8 +26,8 @@ class QuizController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
-        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers']]);
+        $this->middleware('role:professor', ['except' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers', 'getSubmittedQuizzes']]);
+        $this->middleware('role:user', ['only' => ['getStudentQuizzes', 'startQuiz', 'submitQuiz', 'getQuizResult', 'getStudentQuizzesWithResults', 'compareStudentAnswers', 'getSubmittedQuizzes']]);
     }
 
     // Helper method to handle date and time logic
@@ -681,6 +681,60 @@ class QuizController extends Controller
                     'total_pages' => $endedQuizzes->lastPage(),
                     'total_items' => $endedQuizzes->total(),
                 ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getSubmittedQuizzes()
+    {
+        try {
+            // Get the authenticated student ID
+            $studentId = Auth::id();
+
+            // Fetch quizzes where the student has taken (student_quizzes) or submitted (quiz_results)
+            $quizzes = Quiz::with('course')
+                ->whereHas('studentQuizzes', function ($query) use ($studentId) {
+                    $query->where('student_id', $studentId);
+                })
+                ->orWhereHas('quizResults', function ($query) use ($studentId) {
+                    $query->where('StudentID', $studentId);
+                })
+                ->paginate(10);
+
+            // Format response
+            $mappedData = $quizzes->through(function ($quiz) {
+                return [
+                    'quiz_details' => [
+                        'id' => $quiz->QuizID,
+                        'title' => $quiz->Title,
+                        'description' => $quiz->Description,
+                        'duration' => $quiz->Duration,
+                        'start_time' => $quiz->StartTime,
+                        'end_time' => $quiz->EndTime,
+                        'quiz_date' => $quiz->QuizDate,
+                        'total_marks' => $quiz->TotalMarks,
+                    ],
+                    'course_details' => [
+                        'id' => $quiz->course->CourseID,
+                        'name' => $quiz->course->CourseName,
+                        'code' => $quiz->course->CourseCode,
+                    ],
+                ];
+            });
+
+            return response()->json([
+                'data' => $mappedData->items(),
+                'pagination' => [
+                    'current_page' => $quizzes->currentPage(),
+                    'total_pages' => $quizzes->lastPage(),
+                    'total_items' => $quizzes->total(),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
