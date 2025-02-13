@@ -38,6 +38,11 @@ class Quiz extends Model
         return $this->hasMany(QuizResult::class, 'QuizID', 'QuizID');
     }
 
+    public function studentQuizzes()
+    {
+        return $this->hasMany(StudentQuiz::class, 'quiz_id', 'QuizID');
+    }
+
     public function cheatingLogs()
     {
         return $this->hasMany(CheatingLog::class, 'QuizID', 'QuizID');
