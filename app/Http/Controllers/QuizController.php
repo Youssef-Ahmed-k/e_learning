@@ -615,9 +615,13 @@ class QuizController extends Controller
                 $studentAnswer = $studentAnswers->get($question->QuestionID);
 
                 return [
+                    'question_id' => $question->QuestionID,
                     'question_text' => $question->Content,
+                    'image' => $question->image,
+                    'marks' => $question->Marks,
                     'answers' => $question->answers->map(function ($answer) use ($correctAnswerId, $studentAnswer) {
                         return [
+                            'answer_id' => $answer->AnswerID,
                             'answer_text' => $answer->AnswerText,
                             'is_correct' => $answer->AnswerID == $correctAnswerId,
                             'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID
