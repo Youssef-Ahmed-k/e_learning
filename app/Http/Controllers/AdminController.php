@@ -114,6 +114,21 @@ class AdminController extends Controller
             ]
         ]);
     }
+    public function getAllUsers()
+    {
+        $user = auth()->user();
+
+        $users = User::paginate(10);
+
+        return response()->json([
+            'data' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'total_pages' => $users->lastPage(),
+                'total_items' => $users->total(),
+            ]
+        ]);
+    }
 
     public function getAllStudents()
     {

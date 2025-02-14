@@ -49,7 +49,7 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'admin'
 ], function ($router) {
-    Route::get('users',  [UserController::class, 'getAllUsers']);
+    Route::get('users',  [AdminController::class, 'getAllUsers']);
     Route::post('users/assign-role', [AdminController::class, 'assignRole']);
     Route::get('students', [AdminController::class, 'getAllStudents']);
     Route::get('professors', [AdminController::class, 'getAllProfessors']);

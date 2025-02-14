@@ -14,7 +14,6 @@ class UserController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:admin')->only('getAllUsers');
         $this->middleware('role:admin,professor')->only('suspendStudent', 'unsuspendStudent', 'viewSuspendedStudents');
     }
 
@@ -30,22 +29,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function getAllUsers()
-    {
-        $user = auth()->user();
-
-        $users = User::paginate(10);
-
-        return response()->json([
-            'data' => $users->items(),
-            'pagination' => [
-                'current_page' => $users->currentPage(),
-                'total_pages' => $users->lastPage(),
-                'total_items' => $users->total(),
-            ]
-        ]);
-    }
-
+   
     public function updatePassword(UpdatePassword $request)
     {
         $user = auth()->user();
