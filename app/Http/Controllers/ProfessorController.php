@@ -246,10 +246,10 @@ class ProfessorController extends Controller
     {
         try {
             // Get the authenticated professor user from the token
-            $professor = auth()->user(); // هنا نجيب كائن الـ user نفسه مش الـ id فقط
+            $professor = auth()->user(); 
 
             // Retrieve all courses that the professor is teaching
-            $courses = $professor->courses; // نستخدم العلاقة hasMany بين الـ User و الـ Course
+            $courses = $professor->courses; 
 
             if ($courses->isEmpty()) {
                 return response()->json(['message' => 'No courses found for this professor'], 404);
@@ -258,16 +258,16 @@ class ProfessorController extends Controller
             // Map each course with its quizzes and student results
             $coursesData = $courses->map(function ($course) {
                 // Get quizzes for the current course
-                $quizzes = $course->quizzes; // العلاقة بين الـ Course و الـ Quiz
+                $quizzes = $course->quizzes; 
 
                 // Map each quiz with its student results
                 $quizzesData = $quizzes->map(function ($quiz) {
                     // Get quiz results for the specific quiz
-                    $quizResults = $quiz->quizResults; // العلاقة بين الـ Quiz و الـ QuizResult
+                    $quizResults = $quiz->quizResults->sortByDesc('Score'); 
 
                     // Map each student's result
                     $studentsScores = $quizResults->map(function ($result) {
-                        $student = $result->student; // الوصول إلى الطالب من خلال العلاقة بين QuizResult و User
+                        $student = $result->student; 
                         return [
                             'student_name' => $student ? $student->name : 'Unknown',
                             'score' => $result->Score,
@@ -286,6 +286,7 @@ class ProfessorController extends Controller
                 return [
                     'course_id' => $course->CourseID,
                     'course_name' => $course->CourseName,
+                    'course_code' => $course->CourseCode,
                     'quizzes' => $quizzesData,
                 ];
             });
