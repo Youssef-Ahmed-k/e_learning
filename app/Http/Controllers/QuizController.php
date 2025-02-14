@@ -582,11 +582,15 @@ class QuizController extends Controller
             ], 500);
         }
     }
-    public function compareStudentAnswers($quizId)
+    
+    public function compareStudentAnswers(Request $request, $quizId)
     {
         try {
-            // Fetch the quiz with its questions and answers
-            $quiz = Quiz::with(['questions.answers'])->findOrFail($quizId);
+            $perPage = $request->input('per_page', 5); // Default to 5 questions per page
+            $page = $request->input('page', 1);
+
+            // Fetch the quiz
+            $quiz = Quiz::findOrFail($quizId);
 
             // Get the authenticated student ID
             $studentId = auth()->id();
@@ -594,19 +598,19 @@ class QuizController extends Controller
                 return response()->json(['status' => 401, 'message' => 'Unauthorized'], 401);
             }
 
-            // Fetch student answers for this quiz
-            $studentAnswers = StudentAnswer::whereIn('QuestionID', $quiz->questions->pluck('QuestionID')->toArray())
+            // Paginate quiz questions with answers
+            $questions = Question::where('QuizID', $quizId)
+                ->with('answers')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Fetch student answers for paginated questions
+            $studentAnswers = StudentAnswer::whereIn('QuestionID', $questions->pluck('QuestionID')->toArray())
                 ->where('StudentID', $studentId)
                 ->get()
-                ->keyBy('QuestionID'); // Index by question ID for quick lookup
-
-            // Debugging: Check if student answers exist
-            if ($studentAnswers->isEmpty()) {
-                return response()->json(['status' => 404, 'message' => 'No student answers found'], 404);
-            }
+                ->keyBy('QuestionID');
 
             // Prepare response data
-            $questionsComparison = $quiz->questions->map(function ($question) use ($studentAnswers) {
+            $questionsComparison = $questions->map(function ($question) use ($studentAnswers) {
                 $correctAnswerId = $question->answers->firstWhere('IsCorrect', true)?->AnswerID;
                 $studentAnswer = $studentAnswers->get($question->QuestionID);
 
@@ -626,8 +630,14 @@ class QuizController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz answers compared successfully',
-                'quiz_title' => $quiz->Title,
-                'questions' => $questionsComparison
+                'quiz' => $quiz,
+                'questions' => $questionsComparison,
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'total_pages' => $questions->lastPage(),
+                    'total_items' => $questions->total(),
+                    'per_page' => $questions->perPage(),
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -637,6 +647,7 @@ class QuizController extends Controller
             ], 500);
         }
     }
+
 
     public function getEndedQuizzesWithResults()
     {
