@@ -17,16 +17,22 @@ class NotificationController extends Controller
     public function getUserNotifications()
     {
         try {
-            // Get the authenticated user's ID
             $user_id = auth()->user()->id;
 
-            // Fetch all notifications for the user, sorted by latest
+            // Fetch notifications with pagination
             $notifications = Notification::where('RecipientID', $user_id)
                 ->orderBy('SendAt', 'desc')
-                ->select('Message', 'SendAt','Type','CourseID') 
-                ->get();
+                ->select('NotificationID', 'Message', 'SendAt', 'Type', 'CourseID', 'is_read')
+                ->paginate(10); // Paginate with 10 per page
 
-            return response()->json(['notifications' => $notifications]);
+            return response()->json([
+                'notifications' => $notifications->items(),
+                'pagination' => [
+                    'current_page' => $notifications->currentPage(),
+                    'total_pages' => $notifications->lastPage(),
+                    'total_items' => $notifications->total(),
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
@@ -34,17 +40,23 @@ class NotificationController extends Controller
     public function getUnreadNotifications()
     {
         try {
-            // Get the authenticated user's ID
             $user_id = auth()->user()->id;
 
-            // Fetch only unread notifications (ReadAt is NULL)
+            // Fetch unread notifications with pagination
             $notifications = Notification::where('RecipientID', $user_id)
                 ->where('is_read', false)
                 ->orderBy('SendAt', 'desc')
-                ->select('Message', 'SendAt','Type','CourseID') 
-                ->get();
+                ->select('NotificationID', 'Message', 'SendAt', 'Type', 'CourseID', 'is_read')
+                ->paginate(10); // Paginate with 10 per page
 
-            return response()->json(['notifications' => $notifications]);
+            return response()->json([
+                'notifications' => $notifications->items(),
+                'pagination' => [
+                    'current_page' => $notifications->currentPage(),
+                    'total_pages' => $notifications->lastPage(),
+                    'total_items' => $notifications->total(),
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
@@ -72,8 +84,8 @@ class NotificationController extends Controller
 
             // Update all unread notifications
             Notification::where('RecipientID', $user_id)
-            ->where('is_read', false)
-            ->update(['is_read' => 1, 'SendAt' => DB::raw('SendAt')]);
+                ->where('is_read', false)
+                ->update(['is_read' => 1, 'SendAt' => DB::raw('SendAt')]);
 
             return response()->json(['message' => 'All notifications marked as read']);
         } catch (\Exception $e) {
