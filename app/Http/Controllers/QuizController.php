@@ -221,7 +221,7 @@ class QuizController extends Controller
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
     }
-    public function getCourseQuizzes($courseId)
+    public function getCourseQuizzes($courseId, Request $request)
     {
         try {
             $professorId = auth()->user()->id;
@@ -235,14 +235,36 @@ class QuizController extends Controller
                 return response()->json(['message' => 'Professor not part of the course'], 403);
             }
 
-            // Get quizzes created by the professor in the course
-            $quizzes = Quiz::where('CourseID', $courseId)
-                ->paginate(10);
+            // Start building the query
+            $query = Quiz::where('CourseID', $courseId);
+
+            // Add search if provided
+            if ($request->has('search') && !empty($request->search)) {
+                $query->where('Title', 'LIKE', '%' . $request->search . '%');
+            }
+
+            // Add sorting
+            if ($request->has('sort_order')) {
+                switch ($request->sort_order) {
+                    case 'nearest':
+                        $query->orderBy('StartTime', 'asc');
+                        break;
+                    case 'longest':
+                        $query->orderBy('StartTime', 'desc');
+                        break;
+                    default:
+                        $query->orderBy('StartTime', 'asc');
+                }
+            } else {
+                $query->orderBy('StartTime', 'asc');
+            }
+
+            // Get paginated results
+            $quizzes = $query->paginate(9);
 
             return response()->json([
                 'quizzes' => $quizzes->items(),
-                'pagination' =>
-                [
+                'pagination' => [
                     'current_page' => $quizzes->currentPage(),
                     'total_pages' => $quizzes->lastPage(),
                     'total_items' => $quizzes->total()
