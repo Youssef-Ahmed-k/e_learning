@@ -212,16 +212,10 @@ class QuizController extends Controller
                     'courses.CourseName',
                     'courses.CourseCode'
                 )
-                ->paginate(10);
+                ->get();
 
             return response()->json([
-                'quizzes' => $quizzes->items(),
-                'pagination' =>
-                [
-                    'current_page' => $quizzes->currentPage(),
-                    'total_pages' => $quizzes->lastPage(),
-                    'total_items' => $quizzes->total()
-                ]
+                'quizzes' => $quizzes
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
@@ -582,7 +576,7 @@ class QuizController extends Controller
             ], 500);
         }
     }
-    
+
     public function compareStudentAnswers(Request $request, $quizId)
     {
         try {
