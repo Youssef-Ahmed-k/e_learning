@@ -84,7 +84,8 @@ class ProfessorController extends Controller
             //  Send notifications to students enrolled in the course 
             NotificationService::sendToCourseStudents(
                 $course->CourseID,
-                "New course material uploaded in {$course->CourseName}: {$material->Title}.",'material'
+                "New course material uploaded in {$course->CourseName}: {$material->Title}.",
+                'material'
             );
 
             DB::commit();
@@ -135,70 +136,71 @@ class ProfessorController extends Controller
         if ($request->hasFile('file') && $request->hasFile('video')) {
             return response()->json(['message' => 'You can only upload either a file or a video, not both.'], 400);
         }
-    
+
         DB::beginTransaction();
         try {
             $material = Material::findOrFail($material_id);
-    
+
             if ($material->ProfessorID !== auth()->id()) {
                 return response()->json(['message' => 'You are not authorized to update this material.'], 403);
             }
-    
+
             if ($request->material_type === 'pdf' && !$request->hasFile('file')) {
                 return response()->json(['message' => 'You must upload a file for PDF materials.'], 400);
             }
-    
+
             if ($request->material_type === 'video' && !$request->hasFile('video')) {
                 return response()->json(['message' => 'You must upload a video for video materials.'], 400);
             }
-    
+
             $updatedFields = [];
-    
+
             if ($request->hasFile('file')) {
                 $material->FilePath = $this->handleFileUpload($request, 'file', $material->FilePath);
                 $material->VideoPath = null;
                 $updatedFields[] = 'File';
             }
-    
+
             if ($request->hasFile('video')) {
                 $material->VideoPath = $this->handleFileUpload($request, 'video', $material->VideoPath);
                 $material->FilePath = null;
                 $updatedFields[] = 'Video';
             }
-    
+
             if ($request->title && $request->title !== $material->Title) {
                 $updatedFields[] = 'Title';
             }
-    
+
             if ($request->description && $request->description !== $material->Description) {
                 $updatedFields[] = 'Description';
             }
-    
+
             if ($request->material_type && $request->material_type !== $material->MaterialType) {
                 $updatedFields[] = 'Material Type';
             }
-    
+
             $material->update([
                 'Title' => $request->title ?? $material->Title,
                 'Description' => $request->description ?? $material->Description,
                 'MaterialType' => $request->material_type ?? $material->MaterialType,
             ]);
-    
+
             DB::commit();
-    
+
             // **Get course name**
             $course = Course::findOrFail($material->CourseID);
-            $courseName = $course->CourseName; 
-    
+            $courseName = $course->CourseName;
+
             // Send notification if any field was updated
             if (!empty($updatedFields)) {
                 $updatedFieldsList = implode(', ', $updatedFields);
                 NotificationService::sendToCourseStudents(
                     $material->CourseID,
-                    "The course material '{$material->Title}' in the course '{$courseName}' has been updated. Changes include: {$updatedFieldsList}. Please check the new content.",'material'
+                    "The course material '{$material->Title}' in the course '{$courseName}' has been updated. Changes include: {$updatedFieldsList}. Please check the new content.",
+                    'material'
                 );
             }
-    
+
             return response()->json(['message' => 'Course material updated successfully', 'data' => $material], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -208,7 +210,7 @@ class ProfessorController extends Controller
             ], 500);
         }
     }
-    
+
 
     public function getCourseMaterials($course_id)
     {
@@ -245,55 +247,90 @@ class ProfessorController extends Controller
     public function getCoursesWithResults()
     {
         try {
-            // Get the authenticated professor user from the token
-            $professor = auth()->user(); 
-
-            // Retrieve all courses that the professor is teaching
-            $courses = $professor->courses; 
+            $professor = auth()->user();
+            $courses = $professor->courses;
 
             if ($courses->isEmpty()) {
                 return response()->json(['message' => 'No courses found for this professor'], 404);
             }
 
-            // Map each course with its quizzes and student results
-            $coursesData = $courses->map(function ($course) {
-                // Get quizzes for the current course
-                $quizzes = $course->quizzes; 
+            $studentData = [];
 
-                // Map each quiz with its student results
-                $quizzesData = $quizzes->map(function ($quiz) {
-                    // Get quiz results for the specific quiz
-                    $quizResults = $quiz->quizResults->sortByDesc('Score'); 
+            // Collect student scores, courses, and quiz count
+            $coursesData = $courses->map(function ($course) use (&$studentData) {
+                $quizzes = $course->quizzes;
 
-                    // Map each student's result
-                    $studentsScores = $quizResults->map(function ($result) {
-                        $student = $result->student; 
+                $quizzesData = $quizzes->map(function ($quiz) use (&$studentData, $course) {
+                    $quizResults = $quiz->quizResults->sortByDesc('Score');
+
+                    // Ensure we return quiz data, even if there are no results
+                    if ($quizResults->isEmpty()) {
                         return [
-                            'student_name' => $student ? $student->name : 'Unknown',
-                            'score' => $result->Score,
-                            'percentage' => $result->Percentage,
-                            'passed' => $result->Passed,
+                            'quiz_id' => $quiz->QuizID,
+                            'quiz_name' => $quiz->title, // Ensure you're using 'title' instead of 'QuizName'
+                            'quiz_results' => [],
                         ];
+                    }
+
+                    $quizResults->each(function ($result) use (&$studentData, $course, $quiz) {
+                        $student = $result->student;
+                        if (!$student) return;
+
+                        if (!isset($studentData[$student->id])) {
+                            $studentData[$student->id] = [
+                                'student_id' => $student->id,
+                                'student_name' => $student->name,
+                                'courses' => [],
+                                'quizzes' => [],
+                                'total_score' => 0,
+                            ];
+                        }
+
+                        $studentData[$student->id]['courses'][$course->CourseID] = true;
+                        $studentData[$student->id]['quizzes'][$quiz->QuizID] = true;
+                        $studentData[$student->id]['total_score'] += $result->Score;
                     });
 
                     return [
                         'quiz_id' => $quiz->QuizID,
-                        'quiz_name' => $quiz->Title,
-                        'students_scores' => $studentsScores,
+                        'quiz_name' => $quiz->Title, // Ensure you're using the correct column name
+                        'quiz_results' => $quizResults->values()->toArray(),
                     ];
-                });
+                })->filter(); // Remove null values
 
                 return [
                     'course_id' => $course->CourseID,
                     'course_name' => $course->CourseName,
                     'course_code' => $course->CourseCode,
-                    'quizzes' => $quizzesData,
+                    'quizzes' => $quizzesData->values(), // Ensure quizzes are properly formatted
                 ];
             });
 
-            // Return courses, quizzes, and student results
+            // Convert courses & quizzes from array to count
+            $studentList = collect($studentData)->map(function ($data) {
+                return [
+                    'student_id' => $data['student_id'],
+                    'student_name' => $data['student_name'],
+                    'courses' => count($data['courses']),
+                    'quizzes' => count($data['quizzes']),
+                    'points' => $data['total_score'],
+                ];
+            });
+
+            // Rank students based on total points
+            $rankedStudents = $studentList->sortByDesc('points')->values()->map(function ($student, $index) {
+                return [
+                    'rank' => $index + 1,
+                    'student_name' => $student['student_name'],
+                    'courses' => $student['courses'],
+                    'quizzes' => $student['quizzes'],
+                    'points' => $student['points'],
+                ];
+            });
+
             return response()->json([
                 'courses' => $coursesData,
+                'best_performers' => $rankedStudents,
             ]);
         } catch (\Exception $e) {
             return response()->json([
