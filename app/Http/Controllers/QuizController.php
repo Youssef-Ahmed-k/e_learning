@@ -669,20 +669,40 @@ class QuizController extends Controller
     }
 
 
-    public function getEndedQuizzesWithResults()
+    public function getEndedQuizzesWithResults(Request $request)
     {
         try {
-            // Get the authenticated professor's ID
             $professorId = Auth::id();
+            $search = $request->query('search', '');
+            $sortBy = $request->query('sortBy', 'QuizDate');
+            $sortOrder = $request->query('sortOrder', 'desc');
+            $courseId = $request->query('courseId');
 
-            $endedQuizzes = Quiz::with(['quizResults', 'course'])
+            $query = Quiz::with(['quizResults', 'course'])
                 ->whereHas('course', function ($query) use ($professorId) {
-                    $query->where('ProfessorID', $professorId); // Filter by professor ID
+                    $query->where('ProfessorID', $professorId);
                 })
                 ->whereNotNull('EndTime')
                 ->where('EndTime', '<', Carbon::now('Africa/Cairo'))
-                ->has('quizResults')
-                ->paginate(10);
+                ->has('quizResults');
+
+            // Apply search filter
+            if ($search) {
+                $query->where('Title', 'LIKE', "%{$search}%");
+            }
+
+            // Apply course filter
+            if ($courseId) {
+                $query->where('CourseID', $courseId);
+            }
+
+            // Apply sorting
+            $allowedSortFields = ['QuizDate', 'Title', 'TotalMarks'];
+            if (in_array($sortBy, $allowedSortFields)) {
+                $query->orderBy($sortBy, $sortOrder);
+            }
+
+            $endedQuizzes = $query->paginate(10);
 
             $mappedData = $endedQuizzes->through(function ($quiz) {
                 return [
