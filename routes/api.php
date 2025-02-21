@@ -112,29 +112,32 @@ Route::group([
     Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
 });
 
+// Quiz Routes
 Route::group([
     'middleware' => 'api',
-    'prefix' => 'quiz'
+    'prefix' => 'quizzes'
 ], function ($router) {
-    Route::post('create-quiz', [QuizController::class, 'createQuiz']);
-    Route::patch('update-quiz/{id}', [QuizController::class, 'updateQuiz']);
-    Route::delete('delete-quiz/{id}', [QuizController::class, 'deleteQuiz']);
+    Route::post('', [QuizController::class, 'createQuiz']);
+    Route::patch('{id}', [QuizController::class, 'updateQuiz']);
+    Route::delete('{id}', [QuizController::class, 'deleteQuiz']);
+    
     Route::post('add-question', [QuestionController::class, 'addQuestion']);
     Route::patch('update-question/{id}', [QuestionController::class, 'updateQuestion']);
     Route::delete('delete-question/{id}', [QuestionController::class, 'deleteQuestion']);
     Route::get('get-questions/{id}', [QuestionController::class, 'getQuizQuestions']);
-    Route::get('course-quizzes/{courseId}', [QuizController::class, 'getCourseQuizzes']);
-    Route::get('get-quiz/{id}', [QuizController::class, 'getQuiz']);
-    Route::get('get-quizzes', [QuizController::class, 'getAllQuizzes']);
+    
+    Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
+    Route::get('{id}', [QuizController::class, 'getQuiz']);
+    Route::get('', [QuizController::class, 'getAllQuizzes']);
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
-    Route::get('start-quiz/{id}', [QuizController::class, 'startQuiz']);
-    Route::post('submit-quiz/{id}', [QuizController::class, 'submitQuiz']);
-    Route::get('getQuizResult/{id}', [QuizController::class, 'getQuizResult']);
-    Route::get('getQuizScores/{id}', [QuizController::class, 'getQuizScores']);
+    Route::get('start/{id}', [QuizController::class, 'startQuiz']);
+    Route::post('submit/{id}', [QuizController::class, 'submitQuiz']);
+    Route::get('result/{id}', [QuizController::class, 'getQuizResult']);
+    Route::get('scores/{id}', [QuizController::class, 'getQuizScores']);
     Route::get('quizzes-results', [QuizController::class, 'getStudentQuizzesWithResults']);
-    Route::get('correct_answer/{id}', [QuizController::class, 'compareStudentAnswers']);
+    Route::get('correct-answer/{id}', [QuizController::class, 'compareStudentAnswers']);
     Route::get('ended-with-results', [QuizController::class, 'getEndedQuizzesWithResults']);
-    Route::get('submitted-quizzes', [QuizController::class, 'getSubmittedQuizzes']);
+    Route::get('submitted', [QuizController::class, 'getSubmittedQuizzes']);
 });
 
 Route::group([
