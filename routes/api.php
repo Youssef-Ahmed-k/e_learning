@@ -90,14 +90,16 @@ Route::group([
     Route::get('', [CourseController::class, 'getAllCoursesWithProfessors']);
 });
 
+// Student Routes
 Route::group([
     'middleware' => 'api',
-    'prefix' => 'student'
+    'prefix' => 'students'
 ], function ($router) {
     Route::get('courses', [StudentController::class, 'viewRegisteredCourses']);
     Route::get('materials/{courseID}', [StudentController::class, 'viewCourseMaterials']);
 });
 
+// Professor Routes
 Route::group([
     'middleware' => 'api',
     'prefix' => 'professor'
