@@ -146,14 +146,15 @@ Route::group([
     Route::get('quiz/{id}', [QuestionController::class, 'getQuizQuestions']);
 });
 
+// Notification Routes
 Route::group([
     'middleware' => 'api',
-    'prefix' => 'notification'
+    'prefix' => 'notifications'
 ], function ($router) {
-    Route::get('notifications', [NotificationController::class, 'getUserNotifications']);
-    Route::get('notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
-    Route::post('notifications/read/{id}', [NotificationController::class, 'markAsRead']);
-    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
-    Route::delete('notifications/{id}', [NotificationController::class, 'deleteNotification']);
-    Route::delete('notifications', [NotificationController::class, 'deleteAllNotifications']);
+    Route::get('', [NotificationController::class, 'getUserNotifications']);
+    Route::get('unread', [NotificationController::class, 'getUnreadNotifications']);
+    Route::post('read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::post('read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('{id}', [NotificationController::class, 'deleteNotification']);
+    Route::delete('', [NotificationController::class, 'deleteAllNotifications']);
 });
