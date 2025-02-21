@@ -121,11 +121,6 @@ Route::group([
     Route::patch('{id}', [QuizController::class, 'updateQuiz']);
     Route::delete('{id}', [QuizController::class, 'deleteQuiz']);
     
-    Route::post('add-question', [QuestionController::class, 'addQuestion']);
-    Route::patch('update-question/{id}', [QuestionController::class, 'updateQuestion']);
-    Route::delete('delete-question/{id}', [QuestionController::class, 'deleteQuestion']);
-    Route::get('get-questions/{id}', [QuestionController::class, 'getQuizQuestions']);
-    
     Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
     Route::get('{id}', [QuizController::class, 'getQuiz']);
     Route::get('', [QuizController::class, 'getAllQuizzes']);
@@ -138,6 +133,17 @@ Route::group([
     Route::get('correct-answer/{id}', [QuizController::class, 'compareStudentAnswers']);
     Route::get('ended-with-results', [QuizController::class, 'getEndedQuizzesWithResults']);
     Route::get('submitted', [QuizController::class, 'getSubmittedQuizzes']);
+});
+
+// Question Routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'questions'
+], function ($router) {
+    Route::post('', [QuestionController::class, 'addQuestion']);
+    Route::patch('{id}', [QuestionController::class, 'updateQuestion']);
+    Route::delete('{id}', [QuestionController::class, 'deleteQuestion']);
+    Route::get('quiz/{id}', [QuestionController::class, 'getQuizQuestions']);
 });
 
 Route::group([
