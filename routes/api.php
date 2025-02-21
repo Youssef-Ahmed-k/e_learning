@@ -24,6 +24,7 @@ use App\Http\Controllers\NotificationController;
 |
 */
 
+// Authentication Routes
 Route::group([
     'middleware' => 'api',
     'prefix' => 'auth'
@@ -36,13 +37,20 @@ Route::group([
     Route::post('profile',  [AuthController::class, 'me']);
     Route::patch('profile/update',  [UserController::class, 'updateProfile']);
     Route::patch('password/update',  [UserController::class, 'updatePassword']);
+    Route::post('forgot-password', [AuthController::class, 'sendResetLinkEmail']);
+    Route::post('reset-password', [AuthController::class, 'resetPassword']);
+});
+
+// User Management Routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'users'
+], function ($router) {
     Route::post('profile/upload-profile-picture', [UserController::class, 'uploadProfilePicture']);
     Route::delete('profile/delete-profile-picture', [UserController::class, 'deleteProfilePicture']);
     Route::get('/students/suspend', [UserController::class, 'viewSuspendedStudents']);
     Route::post('/students/{id}/suspend', [UserController::class, 'suspendStudent']);
     Route::post('/students/{id}/unsuspend', [UserController::class, 'unsuspendStudent']);
-    Route::post('forgot-password', [AuthController::class, 'sendResetLinkEmail']);
-    Route::post('reset-password', [AuthController::class, 'resetPassword']);
 });
 
 Route::group([
