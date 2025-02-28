@@ -15,6 +15,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuizResult;
 use App\Http\Controllers\QuizResultController;
+use App\Http\Controllers\QuizSubmissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -136,7 +137,7 @@ Route::group([
     Route::patch('{id}', [QuizController::class, 'updateQuiz']);
     Route::delete('{id}', [QuizController::class, 'deleteQuiz']);
 
-    Route::post('submit/{id}', [QuizController::class, 'submitQuiz']);
+    Route::post('submit/{id}', [QuizSubmissionController::class, 'submitQuiz']);
 });
 
 // Question Routes
