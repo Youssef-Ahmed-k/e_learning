@@ -12,6 +12,8 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\QuizResult;
+use App\Http\Controllers\QuizResultController;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,15 +118,15 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'quizzes'
 ], function ($router) {
-    Route::get('ended-with-results', [QuizController::class, 'getEndedQuizzesWithResults']);
+    Route::get('ended-with-results', [QuizResultController::class, 'getEndedQuizzesWithResults']);
     Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
-    Route::get('quizzes-results', [QuizController::class, 'getStudentQuizzesWithResults']);
+    Route::get('quizzes-results', [QuizResultController::class, 'getStudentQuizzesWithResults']);
     Route::get('submitted', [QuizController::class, 'getSubmittedQuizzes']);
 
     Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
     Route::get('start/{id}', [QuizController::class, 'startQuiz']);
-    Route::get('result/{id}', [QuizController::class, 'getQuizResult']);
-    Route::get('scores/{id}', [QuizController::class, 'getQuizScores']);
+    Route::get('result/{id}', [QuizResultController::class, 'getQuizResult']);
+    Route::get('scores/{id}', [QuizResultController::class, 'getQuizScores']);
     Route::get('correct-answer/{id}', [QuizController::class, 'compareStudentAnswers']);
 
     Route::post('', [QuizController::class, 'createQuiz']);
