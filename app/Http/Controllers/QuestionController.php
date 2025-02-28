@@ -6,6 +6,8 @@ use App\Http\Requests\AddQuestionRequest;
 use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Answer;
 use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\StudentAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,8 +16,8 @@ class QuestionController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:professor')->except('getQuizQuestions');
-        $this->middleware('role:user')->only('getQuizQuestions');
+        $this->middleware('role:professor')->except('getQuizQuestions', 'compareStudentAnswers',);
+        $this->middleware('role:user')->only('getQuizQuestions',  'compareStudentAnswers',);
     }
 
     public function addQuestion(AddQuestionRequest $request)
@@ -302,6 +304,75 @@ class QuestionController extends Controller
                     ]);
                 }
                 break;
+        }
+    }
+
+    public function compareStudentAnswers(Request $request, $quizId)
+    {
+        try {
+            $perPage = $request->input('per_page', 5); // Default to 5 questions per page
+            $page = $request->input('page', 1);
+
+            // Fetch the quiz
+            $quiz = Quiz::findOrFail($quizId);
+
+            // Get the authenticated student ID
+            $studentId = auth()->id();
+            if (!$studentId) {
+                return response()->json(['status' => 401, 'message' => 'Unauthorized'], 401);
+            }
+
+            // Paginate quiz questions with answers
+            $questions = Question::where('QuizID', $quizId)
+                ->with('answers')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Fetch student answers for paginated questions
+            $studentAnswers = StudentAnswer::whereIn('QuestionID', $questions->pluck('QuestionID')->toArray())
+                ->where('StudentID', $studentId)
+                ->get()
+                ->keyBy('QuestionID');
+
+            // Prepare response data
+            $questionsComparison = $questions->map(function ($question) use ($studentAnswers) {
+                $correctAnswerId = $question->answers->firstWhere('IsCorrect', true)?->AnswerID;
+                $studentAnswer = $studentAnswers->get($question->QuestionID);
+
+                return [
+                    'question_id' => $question->QuestionID,
+                    'question_text' => $question->Content,
+                    'image' => $question->image,
+                    'marks' => $question->Marks,
+                    'answers' => $question->answers->map(function ($answer) use ($correctAnswerId, $studentAnswer) {
+                        return [
+                            'answer_id' => $answer->AnswerID,
+                            'answer_text' => $answer->AnswerText,
+                            'is_correct' => $answer->AnswerID == $correctAnswerId,
+                            'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID
+                        ];
+                    }),
+                    'student_selected_correct' => optional($studentAnswer)->SelectedAnswerID == $correctAnswerId
+                ];
+            });
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Quiz answers compared successfully',
+                'quiz' => $quiz,
+                'questions' => $questionsComparison,
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'total_pages' => $questions->lastPage(),
+                    'total_items' => $questions->total(),
+                    'per_page' => $questions->perPage(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
