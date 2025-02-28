@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\StudentQuiz;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -119,15 +120,15 @@ Route::group([
     'prefix' => 'quizzes'
 ], function ($router) {
     Route::get('ended-with-results', [QuizResultController::class, 'getEndedQuizzesWithResults']);
-    Route::get('student-quizzes', [QuizController::class, 'getStudentQuizzes']);
-    Route::get('quizzes-results', [QuizResultController::class, 'getStudentQuizzesWithResults']);
-    Route::get('submitted', [QuizController::class, 'getSubmittedQuizzes']);
+    Route::get('student-quizzes', [StudentController::class, 'getAvailableQuizzes']);
+    Route::get('quizzes-results', [QuizResultController::class, 'getAvailableQuizzesWithResults']);
+    Route::get('submitted', [StudentController::class, 'getSubmittedQuizzes']);
 
     Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
-    Route::get('start/{id}', [QuizController::class, 'startQuiz']);
+    Route::get('start/{id}', [StudentController::class, 'startQuiz']);
     Route::get('result/{id}', [QuizResultController::class, 'getQuizResult']);
     Route::get('scores/{id}', [QuizResultController::class, 'getQuizScores']);
-    Route::get('correct-answer/{id}', [QuizController::class, 'compareStudentAnswers']);
+    Route::get('correct-answer/{id}', [QuestionController::class, 'compareStudentAnswers']);
 
     Route::post('', [QuizController::class, 'createQuiz']);
     Route::get('', [QuizController::class, 'getAllQuizzes']);
