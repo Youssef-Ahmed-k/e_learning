@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Http\Requests\CreateQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
