@@ -129,7 +129,7 @@ Route::group([
     Route::get('start/{id}', [StudentController::class, 'startQuiz']);
     Route::get('result/{id}', [QuizResultController::class, 'getQuizResult']);
     Route::get('scores/{id}', [QuizResultController::class, 'getQuizScores']);
-    Route::get('correct-answer/{id}', [QuestionController::class, 'compareStudentAnswers']);
+    Route::get('correct-answer/{id}', [StudentController::class, 'compareStudentAnswers']);
 
     Route::post('', [QuizController::class, 'createQuiz']);
     Route::get('', [QuizController::class, 'getAllQuizzes']);
