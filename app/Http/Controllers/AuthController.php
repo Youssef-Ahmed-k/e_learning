@@ -13,6 +13,8 @@ use App\Models\User;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\ResetPasswordverificationNOtification;
+use Google\Service\ServiceConsumerManagement\Http;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use phpDocumentor\Reflection\PseudoTypes\True_;
 
@@ -36,6 +38,19 @@ class AuthController extends Controller
         try {
             $data = $request->validated();
             $user = User::create($data);
+
+            // Send base64 images to face API
+            $response = Http::post('http://localhost:8001/register', [
+                'user_id' => $user->id,
+                'images' => $request->input('captured_images'),
+            ]);
+
+            if ($response->failed()) {
+                return response()->json(['message' => 'Failed to send images to face API'], 500);
+            }
+
+            DB::commit();
+            
 
             return response()->json([
                 'message' => 'Registration successful',
