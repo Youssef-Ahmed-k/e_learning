@@ -28,7 +28,9 @@ class Register extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|max:20|confirmed|regex:/[A-Z]/|regex:/[0-9]/',
             'phone' => 'required|regex:/^01[0125][0-9]{8}$/|unique:users,phone',
-            'address' => 'required|string|max:255'
+            'address' => 'required|string|max:255',
+            'captured_images' => 'required|array',
+            'captured_images.*' => 'string|regex:/^data:image\/(png|jpg|jpeg);base64,/', // Assuming the images are base64 strings
         ];
     }
     public function attributes()
