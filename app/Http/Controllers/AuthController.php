@@ -50,7 +50,7 @@ class AuthController extends Controller
             }
 
             // Send to FastAPI with proper form data
-            $response = Http::post('http://localhost:8003/register', [
+            $response = Http::post('http://localhost:8001/register', [
                 'user_id' => $user->id,
                 'images' => $capturedImages,
             ]);
