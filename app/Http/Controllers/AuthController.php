@@ -13,10 +13,11 @@ use App\Models\User;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\ResetPasswordverificationNOtification;
-use Google\Service\ServiceConsumerManagement\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use phpDocumentor\Reflection\PseudoTypes\True_;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -36,21 +37,35 @@ class AuthController extends Controller
     public function register(Register $request)
     {
         try {
+            DB::beginTransaction();
             $data = $request->validated();
             $user = User::create($data);
 
-            // Send base64 images to face API
-            $response = Http::post('http://localhost:8001/register', [
+            // Commit transaction to ensure user is in database
+            DB::commit();
+
+            $capturedImages = $request->input('captured_images', []);
+            if (count($capturedImages) < 3) {
+                return response()->json(['message' => 'At least 3 images are required'], 422);
+            }
+
+            // Send to FastAPI with proper form data
+            $response = Http::post('http://localhost:8003/register', [
                 'user_id' => $user->id,
-                'images' => $request->input('captured_images'),
+                'images' => $capturedImages,
             ]);
 
             if ($response->failed()) {
-                return response()->json(['message' => 'Failed to send images to face API'], 500);
+                // Consider removing the user if FastAPI fails
+                User::destroy($user->id);    
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Failed to send images to face API',
+                    'error' => $response->json()['detail'] ?? $response->body()
+                ], 500);
             }
 
             DB::commit();
-            
 
             return response()->json([
                 'message' => 'Registration successful',
@@ -60,6 +75,7 @@ class AuthController extends Controller
                 ]
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Something went wrong',
                 'error' => $e->getMessage(),
@@ -154,23 +170,23 @@ class AuthController extends Controller
     }
     public function sendResetLinkEmail(ForgotPasswordRequest $request)
     {
-    try {
-        $input = $request->only('email');
-        $user = User::where('email', $input['email'])->first();
+        try {
+            $input = $request->only('email');
+            $user = User::where('email', $input['email'])->first();
 
-        if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
-        }
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
 
-        $user->notify(new ResetPasswordverificationNOtification());
-        return response()->json(['message' => 'Reset password link sent to your email.']);
+            $user->notify(new ResetPasswordverificationNOtification());
+            return response()->json(['message' => 'Reset password link sent to your email.']);
         } catch (\Exception $e) {
             return response()->json([
-            'message' => 'Something went wrong',
-            'error' => $e->getMessage(),
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ], 500);
         }
-}
+    }
     public function resetPassword(ResetPasswordRequest $request)
     {
         try {
@@ -192,5 +208,4 @@ class AuthController extends Controller
             ], 500);
         }
     }
-    
 }
