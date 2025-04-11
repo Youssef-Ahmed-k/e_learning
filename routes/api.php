@@ -126,7 +126,7 @@ Route::group([
     Route::get('submitted', [StudentController::class, 'getSubmittedQuizzes']);
 
     Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
-    Route::get('start/{id}', [StudentController::class, 'startQuiz']);
+    Route::post('start/{id}', [StudentController::class, 'startQuiz']);
     Route::get('result/{id}', [QuizResultController::class, 'getQuizResult']);
     Route::get('scores/{id}', [QuizResultController::class, 'getQuizScores']);
     Route::get('correct-answer/{id}', [StudentController::class, 'compareStudentAnswers']);
