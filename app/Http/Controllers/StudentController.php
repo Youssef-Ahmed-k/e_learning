@@ -213,14 +213,14 @@ class StudentController extends Controller
             }
 
             // Face verification logic
-            $capturedImage = $request->input('captured_image');
-            if (!$capturedImage) {
+            $capturedFrame = $request->input('captured_frame');
+            if (!$capturedFrame) {
                 return response()->json(['message' => 'A captured image is required for face verification'], 422);
             }
 
-            // Send to FastAPI for face verification
-            $response = Http::post('http://localhost:8003/recognize', [
-                'file' => $capturedImage,
+            // Send base64 string to FastAPI - use JSON format
+            $response = Http::asJson()->post('http://localhost:8001/recognize', [
+                'captured_image' => $capturedFrame,
             ]);
 
             if ($response->failed()) {
@@ -233,9 +233,15 @@ class StudentController extends Controller
             $verificationResult = $response->json();
             $matches = $verificationResult['matches'] ?? [];
 
-            // Check if the student is verified
+            if (empty($matches)) {
+                return response()->json(['message' => 'No face detected in the image', 'debug' => $verificationResult], 403);
+            }
+
+            // Verify the student's identity (must match studentId and have high confidence)
             $isVerified = collect($matches)->contains(function ($match) use ($studentId) {
-                return $match['user_id'] == $studentId && $match['confidence'] > 0.7; // Adjust confidence threshold if needed
+                return isset($match['user_id']) &&
+                    $match['user_id'] == $studentId &&
+                    $match['confidence'] >= 0.7;
             });
 
             if (!$isVerified) {
