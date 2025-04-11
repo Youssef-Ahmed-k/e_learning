@@ -13,6 +13,7 @@ use App\Models\StudentQuiz;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class StudentController extends Controller
 {
@@ -175,7 +176,7 @@ class StudentController extends Controller
         }
     }
 
-    public function startQuiz($id)
+    public function startQuiz($id, Request $request)
     {
         try {
             $quiz = Quiz::with('questions.answers')->findOrFail($id);
@@ -209,6 +210,36 @@ class StudentController extends Controller
 
             if ($existingResult) {
                 return response()->json(['message' => 'You have already completed this quiz and cannot start again'], 403);
+            }
+
+            // Face verification logic
+            $capturedImage = $request->input('captured_image');
+            if (!$capturedImage) {
+                return response()->json(['message' => 'A captured image is required for face verification'], 422);
+            }
+
+            // Send to FastAPI for face verification
+            $response = Http::post('http://localhost:8003/recognize', [
+                'file' => $capturedImage,
+            ]);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'message' => 'Face verification failed',
+                    'error' => $response->json()['detail'] ?? $response->body()
+                ], 403);
+            }
+
+            $verificationResult = $response->json();
+            $matches = $verificationResult['matches'] ?? [];
+
+            // Check if the student is verified
+            $isVerified = collect($matches)->contains(function ($match) use ($studentId) {
+                return $match['user_id'] == $studentId && $match['confidence'] > 0.7; // Adjust confidence threshold if needed
+            });
+
+            if (!$isVerified) {
+                return response()->json(['message' => 'Face verification failed. You are not authorized to start this quiz.'], 403);
             }
 
             // Record that the student has started the quiz (only if it's the first time)
