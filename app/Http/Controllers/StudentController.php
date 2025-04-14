@@ -221,6 +221,7 @@ class StudentController extends Controller
             // Send base64 string to FastAPI - use JSON format
             $response = Http::asJson()->post('http://localhost:8001/recognize', [
                 'captured_image' => $capturedFrame,
+                'user_id' => $studentId,
             ]);
 
             if ($response->failed()) {
