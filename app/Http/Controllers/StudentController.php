@@ -245,7 +245,11 @@ class StudentController extends Controller
             });
 
             if (!$isVerified) {
-                return response()->json(['message' => 'Face verification failed. You are not authorized to start this quiz.'], 403);
+                return response()->json([
+                    'message' => 'Face verification failed. You are not authorized to start this quiz.',
+                    'debug' => $verificationResult,
+                    'matches' => $matches
+                ], 403);
             }
 
             // Record that the student has started the quiz (only if it's the first time)
