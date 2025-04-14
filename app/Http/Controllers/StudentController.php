@@ -267,18 +267,6 @@ class StudentController extends Controller
                 'TotalMarks' => $quiz->TotalMarks,
                 'CourseName' => $quiz->course->CourseName,
                 'CourseCode' => $quiz->course->CourseCode,
-                'questions' => $quiz->questions->map(function ($question) {
-                    return [
-                        'Content' => $question->Content,
-                        'Type' => $question->Type,
-                        'Marks' => $question->Marks,
-                        'answers' => $question->answers->map(function ($answer) {
-                            return [
-                                'AnswerText' => $answer->AnswerText
-                            ];
-                        }),
-                    ];
-                }),
             ];
             return response()->json([
                 'status' => 200,
