@@ -80,7 +80,8 @@ class QuizResultController extends Controller
                     'score' => 0,
                     'percentage' => 0,
                     'passed' => false,
-                ], 403);
+                    'cheating_score' => $cheatingScore->score,
+                ], 200);
             }
 
             // Return the result with pass/fail status
