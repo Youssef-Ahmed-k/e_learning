@@ -118,7 +118,6 @@ class QuizController extends Controller
 
             if (isset($validated['quiz_date']) && isset($validated['start_time']) && isset($validated['end_time'])) {
                 // Ensure quiz date and time are in the future
-                
                 $quizDateTime = Carbon::parse("{$validated['quiz_date']} {$validated['start_time']}");
                 if ($quizDateTime->isPast()) {
                     return response()->json(['message' => 'Quiz date and time must be in the future'], 422);
