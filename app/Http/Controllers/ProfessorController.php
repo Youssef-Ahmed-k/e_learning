@@ -10,7 +10,9 @@ use App\Http\Requests\UploadCourseMaterialRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
 use App\Models\QuizResult;
+use App\Models\Quiz;
 use App\Models\User;
+use App\Models\CheatingScore;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -335,6 +337,52 @@ class ProfessorController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while retrieving professor courses and results.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getHighCheatingScores($quizId)
+    {
+        try {
+            // Ensure the quiz belongs to the authenticated professor
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->id());
+                })
+                ->first();
+
+            if (!$quiz) {
+                return response()->json(['message' => 'Unauthorized access to this quiz'], 403);
+            }
+
+            // Retrieve cheating scores where the score is 100
+            $cheatingScores = CheatingScore::where('quiz_id', $quizId)
+                ->where('score', 100)
+                ->with('student') // Load student details
+                ->get();
+
+            if ($cheatingScores->isEmpty()) {
+                return response()->json(['message' => 'No students have a cheating score of 100 in this quiz'], 404);
+            }
+
+            // Format the response
+            $students = $cheatingScores->map(function ($cheatingScore) {
+                return [
+                    'student_id' => $cheatingScore->student->id,
+                    'student_name' => $cheatingScore->student->name,
+                    'cheating_score' => $cheatingScore->score,
+                ];
+            });
+
+            return response()->json([
+                'quiz_id' => $quizId,
+                'quiz_title' => $quiz->Title,
+                'students' => $students,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving high cheating scores.',
                 'error' => $e->getMessage(),
             ], 500);
         }
