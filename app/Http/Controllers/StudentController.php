@@ -336,26 +336,11 @@ class StudentController extends Controller
                 $message = "Cheating detected for student {$student->name} in quiz {$quiz->Title}.";
                 NotificationService::sendNotification($professor->id, $message);
 
-                // Automatically submit the quiz
-                $quizSubmissionController = new QuizSubmissionController();
-                $submitRequest = new Request([
-                    'answers' => [], // Empty answers array since the student is being forced to submit
+                return response()->json([
+                    'message' => 'Cheating score reached 100. Quiz submission triggered.',
+                    'new_score' => $newScore,
+                    'auto_submitted' => true,
                 ]);
-                $response = $quizSubmissionController->submitQuiz($submitRequest, $quizId);
-
-                // Check if submission was successful
-                if ($response->getStatusCode() === 200) {
-                    return response()->json([
-                        'message' => 'Cheating score reached 100. Quiz has been automatically submitted.',
-                        'new_score' => $newScore,
-                    ]);
-                } else {
-                    return response()->json([
-                        'message' => 'Cheating score reached 100, but quiz submission failed.',
-                        'new_score' => $newScore,
-                        'error' => $response->getContent(),
-                    ], 500);
-                }
             }
 
             return response()->json(['message' => 'Score updated', 'new_score' => $newScore]);
