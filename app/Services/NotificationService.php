@@ -24,4 +24,13 @@ class NotificationService
             ]);
         }
     }
+
+    public static function sendNotification($recipient_id, $message)
+    {
+        Notification::create([
+            'Message' => $message,
+            'SendAt' => now(),
+            'RecipientID' => $recipient_id,
+        ]);
+    }
 }

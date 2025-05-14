@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Answer;
+use App\Models\CheatingScore;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizResult;
@@ -22,9 +23,9 @@ class QuizSubmissionController extends Controller
     public function submitQuiz(Request $request, $quizId)
     {
         $validated = $request->validate([
-            'answers' => 'required|array', // Ensure answers are provided as an array
-            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
-            'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
+            'answers' => 'present|array', // Allow empty array
+            'answers.*.question_id' => 'required_with:answers.*.answer|exists:questions,QuestionID',
+            'answers.*.answer' => 'required_with:answers.*.question_id|exists:answers,AnswerText',
         ]);
 
         try {
@@ -60,6 +61,11 @@ class QuizSubmissionController extends Controller
             $percentage = ($maxScore > 0) ? ($totalScore / $maxScore) * 100 : 0;
             $passed = $percentage >= 50; // Consider 50% as the passing mark
 
+            // Get cheating score
+            $cheatingScore = CheatingScore::where('student_id', $studentId)
+                ->where('quiz_id', $quizId)
+                ->first();
+
             // Store the student's quiz result
             QuizResult::create([
                 'Score' => $totalScore,
@@ -68,12 +74,14 @@ class QuizSubmissionController extends Controller
                 'SubmittedAt' => now(),
                 'StudentID' => $studentId,
                 'QuizID' => $quiz->QuizID,
+                'CheatingScore' => $cheatingScore ? $cheatingScore->score : 0,
             ]);
 
             DB::commit();
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz submitted successfully',
+                'cheating_score' => $cheatingScore ? $cheatingScore->score : 0,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

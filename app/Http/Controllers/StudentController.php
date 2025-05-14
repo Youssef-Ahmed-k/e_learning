@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CheatingLog;
+use App\Models\CheatingScore;
 use App\Models\Material;
 use App\Models\Course;
 use App\Models\CourseRegistration;
@@ -10,6 +12,8 @@ use App\Models\Quiz;
 use App\Models\QuizResult;
 use App\Models\StudentAnswer;
 use App\Models\StudentQuiz;
+use App\Models\User;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -258,6 +262,13 @@ class StudentController extends Controller
                 'student_id' => $studentId,
                 'quiz_id' => $id,
             ]);
+
+            // Initialize cheating score
+            CheatingScore::firstOrCreate(
+                ['student_id' => $studentId, 'quiz_id' => $id],
+                ['score' => 0]
+            );
+
             $quizData = [
                 'Title' => $quiz->Title,
                 'Description' => $quiz->Description,
@@ -272,13 +283,86 @@ class StudentController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz started successfully',
-                'quiz' => $quizData
+                'quiz' => $quizData,
+                'student_id' => (string) $studentId,
+                'quiz_id' => $id,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function updateCheatingScore(Request $request)
+    {
+        try {
+            $studentId = $request->input('student_id');
+            $quizId = $request->input('quiz_id');
+            $scoreIncrement = $request->input('score_increment');
+            $suspiciousBehaviors = $request->input('alerts', []);
+
+            // Update cheating score
+            $cheatingScore = CheatingScore::where('student_id', $studentId)
+                ->where('quiz_id', $quizId)
+                ->first();
+
+            if (!$cheatingScore) {
+                return response()->json(['message' => 'Cheating score record not found'], 404);
+            }
+
+            $newScore = min($cheatingScore->score + $scoreIncrement, 100);
+            $cheatingScore->update(['score' => $newScore]);
+
+            // Log suspicious behaviors to CheatingLog
+            foreach ($suspiciousBehaviors as $behavior) {
+                CheatingLog::create([
+                    'SuspiciousBehavior' => $behavior,
+                    'IsReviewed' => false,
+                    'StudentID' => $studentId,
+                    'QuizID' => $quizId,
+                    'DetectedAt' => now(),
+                ]);
+            }
+
+            // Notify professor if score reaches 100 and submit the quiz automatically
+            if ($newScore >= 100) {
+                $quiz = Quiz::findOrFail($quizId);
+                $student = User::findOrFail($studentId);
+                $professor = $quiz->course->professor; // Assuming professor relation exists
+
+                // Send notification to the professor who created the quiz
+                $message = "Cheating detected for student {$student->name} in quiz {$quiz->Title}.";
+                NotificationService::sendNotification($professor->id, $message);
+
+                return response()->json([
+                    'message' => 'Cheating score reached 100. Quiz submission triggered.',
+                    'new_score' => $newScore,
+                    'auto_submitted' => true,
+                ]);
+            }
+
+            return response()->json(['message' => 'Score updated', 'new_score' => $newScore]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error updating score', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function endQuiz($id, Request $request)
+    {
+        try {
+            $studentId = auth()->user()->id;
+            $cheatingScore = CheatingScore::where('student_id', $studentId)
+                ->where('quiz_id', $id)
+                ->first();
+
+            return response()->json([
+                'message' => 'Quiz ended',
+                'cheating_score' => $cheatingScore ? $cheatingScore->score : 0
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error ending quiz', 'error' => $e->getMessage()], 500);
         }
     }
 
