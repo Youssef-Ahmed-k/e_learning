@@ -23,9 +23,9 @@ class QuizSubmissionController extends Controller
     public function submitQuiz(Request $request, $quizId)
     {
         $validated = $request->validate([
-            'answers' => 'required|array', // Ensure answers are provided as an array
-            'answers.*.question_id' => 'required|exists:questions,QuestionID', // Ensure each question exists
-            'answers.*.answer' => 'required|exists:answers,AnswerText', // Ensure the selected answer exists
+            'answers' => 'present|array', // Allow empty array
+            'answers.*.question_id' => 'required_with:answers.*.answer|exists:questions,QuestionID',
+            'answers.*.answer' => 'required_with:answers.*.question_id|exists:answers,AnswerText',
         ]);
 
         try {
