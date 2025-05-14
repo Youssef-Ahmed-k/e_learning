@@ -113,6 +113,7 @@ Route::group([
     Route::delete('materials/{material_id}', [ProfessorController::class, 'deleteCourseMaterial']);
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
     Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
+    Route::get('quizzes/{quizId}/high-cheating-scores', [ProfessorController::class, 'getHighCheatingScores']);
 });
 
 // Quiz Routes
