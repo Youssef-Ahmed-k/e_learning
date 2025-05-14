@@ -326,7 +326,7 @@ class StudentController extends Controller
                 ]);
             }
 
-            // Notify professor if score reaches 100
+            // Notify professor if score reaches 100 and submit the quiz automatically
             if ($newScore >= 100) {
                 $quiz = Quiz::findOrFail($quizId);
                 $student = User::findOrFail($studentId);
@@ -335,6 +335,27 @@ class StudentController extends Controller
                 // Send notification to the professor who created the quiz
                 $message = "Cheating detected for student {$student->name} in quiz {$quiz->Title}.";
                 NotificationService::sendNotification($professor->id, $message);
+
+                // Automatically submit the quiz
+                $quizSubmissionController = new QuizSubmissionController();
+                $submitRequest = new Request([
+                    'answers' => [], // Empty answers array since the student is being forced to submit
+                ]);
+                $response = $quizSubmissionController->submitQuiz($submitRequest, $quizId);
+
+                // Check if submission was successful
+                if ($response->getStatusCode() === 200) {
+                    return response()->json([
+                        'message' => 'Cheating score reached 100. Quiz has been automatically submitted.',
+                        'new_score' => $newScore,
+                    ]);
+                } else {
+                    return response()->json([
+                        'message' => 'Cheating score reached 100, but quiz submission failed.',
+                        'new_score' => $newScore,
+                        'error' => $response->getContent(),
+                    ], 500);
+                }
             }
 
             return response()->json(['message' => 'Score updated', 'new_score' => $newScore]);
