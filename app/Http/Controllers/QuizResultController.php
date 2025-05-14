@@ -6,6 +6,7 @@ use App\Models\Quiz;
 use App\Models\QuizResult;
 use App\Models\StudentQuiz;
 use App\Models\User;
+use App\Models\CheatingScore;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -68,6 +69,20 @@ class QuizResultController extends Controller
                 return response()->json(['message' => 'No quiz result found'], 404);
             }
 
+            // Check the cheating score
+            $cheatingScore = CheatingScore::where('student_id', $user)
+                ->where('quiz_id', $quizId)
+                ->first();
+
+            if ($cheatingScore && $cheatingScore->score == 100) {
+                return response()->json([
+                    'message' => 'You have been flagged for cheating in this quiz. Please contact your professor.',
+                    'score' => 0,
+                    'percentage' => 0,
+                    'passed' => false,
+                ], 403);
+            }
+
             // Return the result with pass/fail status
             return response()->json([
                 'score' => $quizResult->Score,
@@ -87,6 +102,7 @@ class QuizResultController extends Controller
     {
         try {
             $studentId = auth()->user()->id;
+
             // Retrieve quizzes taken by the student with related quiz details and results
             $quizzes = StudentQuiz::where('student_id', $studentId)
                 ->with([
@@ -102,7 +118,22 @@ class QuizResultController extends Controller
                     }
                 ])
                 ->get()
-                ->makeHidden(['id', 'student_id', 'quiz_id']); // Hide unnecessary fields
+                ->map(function ($studentQuiz) use ($studentId) {
+                    // Check cheating score for each quiz
+                    $cheatingScore = CheatingScore::where('student_id', $studentId)
+                        ->where('quiz_id', $studentQuiz->quiz_id)
+                        ->first();
+
+                    if ($cheatingScore && $cheatingScore->score == 100) {
+                        $studentQuiz->quizResults->each(function ($result) {
+                            $result->Score = 0;
+                            $result->Percentage = 0;
+                            $result->Passed = false;
+                        });
+                    }
+
+                    return $studentQuiz;
+                });
 
             return response()->json([
                 'success' => true,
@@ -110,7 +141,6 @@ class QuizResultController extends Controller
                 'data' => $quizzes
             ], 200);
         } catch (\Exception $e) {
-            // Handle any unexpected errors
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while retrieving student quizzes',
