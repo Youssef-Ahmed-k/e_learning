@@ -127,7 +127,7 @@ Route::group([
 
     Route::get('course/{courseId}', [QuizController::class, 'getCourseQuizzes']);
     Route::post('start/{id}', [StudentController::class, 'startQuiz']);
-    Route::post('quizzes/{id}/end', [StudentController::class, 'endQuiz']);
+    Route::post('end/{id}', [StudentController::class, 'endQuiz']);
     Route::post('update-cheating-score', [StudentController::class, 'updateCheatingScore']);
     Route::get('result/{id}', [QuizResultController::class, 'getQuizResult']);
     Route::get('scores/{id}', [QuizResultController::class, 'getQuizScores']);
