@@ -283,7 +283,9 @@ class StudentController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'Quiz started successfully',
-                'quiz' => $quizData
+                'quiz' => $quizData,
+                'student_id' => (string) $studentId,
+                'quiz_id' => $id,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
