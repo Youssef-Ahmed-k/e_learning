@@ -114,6 +114,7 @@ Route::group([
     Route::patch('materials/{material_id}', [ProfessorController::class, 'updateCourseMaterial']);
     Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
     Route::get('quizzes/{quizId}/cheaters', [ProfessorController::class, 'getHighCheatingScores']);
+    Route::get('/quizzes/{quizId}/{studentId}/cheating-logs', [ProfessorController::class, 'getCheatingLogs']);
 });
 
 // Quiz Routes
