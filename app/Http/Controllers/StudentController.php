@@ -18,6 +18,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -310,6 +312,10 @@ class StudentController extends Controller
                 return response()->json(['message' => 'Invalid score increment'], 400);
             }
 
+            if ($imageB64 && !preg_match('/^data:image\/[a-z]+;base64,/', $imageB64)) {
+                return response()->json(['message' => 'Invalid image format'], 400);
+            }
+
             // Update cheating score
             $cheatingScore = CheatingScore::where('student_id', $studentId)
                 ->where('quiz_id', $quizId)
@@ -323,19 +329,22 @@ class StudentController extends Controller
             $cheatingScore->update(['score' => $newScore]);
 
             // Handle image if provided
+            // Handle image if provided
             $imagePath = null;
             if ($imageB64) {
                 $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $imageB64));
-                if ($imageData === false) {
-                    return response()->json(['message' => 'Invalid image data'], 400);
+                if ($imageData === false || empty($imageData)) {
+                    Log::warning('Failed to decode image data for student_id: ' . $studentId . ', quiz_id: ' . $quizId);
+                } else {
+                    $filename = 'cheating_' . time() . '_' . uniqid() . '.jpg';
+                    $directory = 'cheating_images';
+                    if (!Storage::disk('public')->exists($directory)) {
+                        Storage::disk('public')->makeDirectory($directory);
+                    }
+                    Storage::disk('public')->put($directory . '/' . $filename, $imageData);
+                    $imagePath = Storage::disk('public')->url($directory . '/' . $filename);
+                    Log::info('Image saved at: ' . $imagePath);
                 }
-                $filename = 'cheating_' . time() . '_' . uniqid() . '.jpg';
-                $path = public_path('cheating_images/' . $filename);
-                if (!file_exists(public_path('cheating_images'))) {
-                    mkdir(public_path('cheating_images'), 0755, true);
-                }
-                file_put_contents($path, $imageData);
-                $imagePath = '/cheating_images/' . $filename;
             }
 
             // Log suspicious behaviors to CheatingLog
