@@ -371,6 +371,7 @@ class ProfessorController extends Controller
                 return [
                     'student_id' => $cheatingScore->student->id,
                     'student_name' => $cheatingScore->student->name,
+                    'student_email' => $cheatingScore->student->email,
                     'cheating_score' => $cheatingScore->score,
                 ];
             });
