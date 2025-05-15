@@ -297,11 +297,18 @@ class StudentController extends Controller
 
     public function updateCheatingScore(Request $request)
     {
+
         try {
             $studentId = $request->input('student_id');
             $quizId = $request->input('quiz_id');
             $scoreIncrement = $request->input('score_increment');
             $suspiciousBehaviors = $request->input('alerts', []);
+            $imageB64 = $request->input('image_b64');
+
+            // Validate inputs
+            if (!is_numeric($scoreIncrement) || $scoreIncrement < 0 || $scoreIncrement > 100) {
+                return response()->json(['message' => 'Invalid score increment'], 400);
+            }
 
             // Update cheating score
             $cheatingScore = CheatingScore::where('student_id', $studentId)
@@ -315,6 +322,22 @@ class StudentController extends Controller
             $newScore = min($cheatingScore->score + $scoreIncrement, 100);
             $cheatingScore->update(['score' => $newScore]);
 
+            // Handle image if provided
+            $imagePath = null;
+            if ($imageB64) {
+                $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $imageB64));
+                if ($imageData === false) {
+                    return response()->json(['message' => 'Invalid image data'], 400);
+                }
+                $filename = 'cheating_' . time() . '_' . uniqid() . '.jpg';
+                $path = public_path('cheating_images/' . $filename);
+                if (!file_exists(public_path('cheating_images'))) {
+                    mkdir(public_path('cheating_images'), 0755, true);
+                }
+                file_put_contents($path, $imageData);
+                $imagePath = '/cheating_images/' . $filename;
+            }
+
             // Log suspicious behaviors to CheatingLog
             foreach ($suspiciousBehaviors as $behavior) {
                 CheatingLog::create([
@@ -323,6 +346,7 @@ class StudentController extends Controller
                     'StudentID' => $studentId,
                     'QuizID' => $quizId,
                     'DetectedAt' => now(),
+                    'image_path' => $imagePath
                 ]);
             }
 
@@ -340,10 +364,11 @@ class StudentController extends Controller
                     'message' => 'Cheating score reached 100. Quiz submission triggered.',
                     'new_score' => $newScore,
                     'auto_submitted' => true,
+                    'image_path' => $imagePath
                 ]);
             }
 
-            return response()->json(['message' => 'Score updated', 'new_score' => $newScore]);
+            return response()->json(['message' => 'Score updated', 'new_score' => $newScore, 'image_path' => $imagePath]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error updating score', 'error' => $e->getMessage()], 500);
         }
