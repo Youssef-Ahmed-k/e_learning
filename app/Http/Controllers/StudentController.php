@@ -18,6 +18,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -297,11 +299,22 @@ class StudentController extends Controller
 
     public function updateCheatingScore(Request $request)
     {
+
         try {
             $studentId = $request->input('student_id');
             $quizId = $request->input('quiz_id');
             $scoreIncrement = $request->input('score_increment');
             $suspiciousBehaviors = $request->input('alerts', []);
+            $imageB64 = $request->input('image_b64');
+
+            // Validate inputs
+            if (!is_numeric($scoreIncrement) || $scoreIncrement < 0 || $scoreIncrement > 100) {
+                return response()->json(['message' => 'Invalid score increment'], 400);
+            }
+
+            if ($imageB64 && !preg_match('/^data:image\/[a-z]+;base64,/', $imageB64)) {
+                return response()->json(['message' => 'Invalid image format'], 400);
+            }
 
             // Update cheating score
             $cheatingScore = CheatingScore::where('student_id', $studentId)
@@ -315,6 +328,25 @@ class StudentController extends Controller
             $newScore = min($cheatingScore->score + $scoreIncrement, 100);
             $cheatingScore->update(['score' => $newScore]);
 
+            // Handle image if provided
+            // Handle image if provided
+            $imagePath = null;
+            if ($imageB64) {
+                $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $imageB64));
+                if ($imageData === false || empty($imageData)) {
+                    Log::warning('Failed to decode image data for student_id: ' . $studentId . ', quiz_id: ' . $quizId);
+                } else {
+                    $filename = 'cheating_' . time() . '_' . uniqid() . '.jpg';
+                    $directory = 'cheating_images';
+                    if (!Storage::disk('public')->exists($directory)) {
+                        Storage::disk('public')->makeDirectory($directory);
+                    }
+                    Storage::disk('public')->put($directory . '/' . $filename, $imageData);
+                    $imagePath = Storage::disk('public')->url($directory . '/' . $filename);
+                    Log::info('Image saved at: ' . $imagePath);
+                }
+            }
+
             // Log suspicious behaviors to CheatingLog
             foreach ($suspiciousBehaviors as $behavior) {
                 CheatingLog::create([
@@ -323,6 +355,7 @@ class StudentController extends Controller
                     'StudentID' => $studentId,
                     'QuizID' => $quizId,
                     'DetectedAt' => now(),
+                    'image_path' => $imagePath
                 ]);
             }
 
@@ -340,10 +373,11 @@ class StudentController extends Controller
                     'message' => 'Cheating score reached 100. Quiz submission triggered.',
                     'new_score' => $newScore,
                     'auto_submitted' => true,
+                    'image_path' => $imagePath
                 ]);
             }
 
-            return response()->json(['message' => 'Score updated', 'new_score' => $newScore]);
+            return response()->json(['message' => 'Score updated', 'new_score' => $newScore, 'image_path' => $imagePath]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error updating score', 'error' => $e->getMessage()], 500);
         }

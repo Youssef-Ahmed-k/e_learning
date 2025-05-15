@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\Notification;
 use App\Models\Material;
 use App\Http\Requests\UploadCourseMaterialRequest;
+use App\Models\CheatingLog;
 use Illuminate\Support\Facades\Storage;
 use App\Models\CourseRegistration;
 use App\Models\QuizResult;
@@ -384,6 +385,55 @@ class ProfessorController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while retrieving high cheating scores.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getCheatingLogs($quizId, $studentId)
+    {
+        try {
+            // Ensure the quiz belongs to the authenticated professor
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->id());
+                })
+                ->first();
+
+            if (!$quiz) {
+                return response()->json(['message' => 'Unauthorized access to this quiz'], 403);
+            }
+
+            // Retrieve cheating logs for the specified student in the quiz
+            $cheatingLogs = CheatingLog::where('QuizID', $quizId)
+                ->where('StudentID', $studentId)
+                ->with(['student' => function ($query) {
+                    $query->select('id', 'name', 'email');
+                }])
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'log_id' => $log->LogID,
+                        'student_id' => $log->StudentID,
+                        'student_name' => $log->student->name ?? 'N/A',
+                        'student_email' => $log->student->email ?? 'N/A',
+                        'suspicious_behavior' => $log->SuspiciousBehavior,
+                        'image_path' => $log->image_path,
+                        'detected_at' => $log->DetectedAt,
+                        'is_reviewed' => $log->IsReviewed,
+                    ];
+                });
+
+            if ($cheatingLogs->isEmpty()) {
+                return response()->json(['message' => 'No cheating logs found for this student in this quiz'], 404);
+            }
+
+            return response()->json([
+                "logs" => $cheatingLogs,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving cheating logs.',
                 'error' => $e->getMessage(),
             ], 500);
         }

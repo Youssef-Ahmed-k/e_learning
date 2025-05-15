@@ -17,6 +17,7 @@ class CheatingLog extends Model
         'StudentID',
         'QuizID',
         'DetectedAt',
+        'image_path',
     ];
 
     public function student()
