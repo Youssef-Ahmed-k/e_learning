@@ -12,7 +12,7 @@ class NotificationController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:user');
+        // $this->middleware('role:user | professor');
     }
     public function getUserNotifications()
     {
