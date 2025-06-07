@@ -23,9 +23,9 @@ class QuizSubmissionController extends Controller
     public function submitQuiz(Request $request, $quizId)
     {
         $validated = $request->validate([
-            'answers' => 'present|array', // Allow empty array
-            'answers.*.question_id' => 'required_with:answers.*.answer|exists:questions,QuestionID',
-            'answers.*.answer' => 'required_with:answers.*.question_id|exists:answers,AnswerText',
+            'answers' => 'present|array',
+            'answers.*.question_id' => 'required_with:answers.*.answer|integer|exists:questions,QuestionID',
+            'answers.*.answer' => 'required_with:answers.*.question_id|string|exists:answers,AnswerText',
         ]);
 
         try {
@@ -35,25 +35,24 @@ class QuizSubmissionController extends Controller
             $quiz = Quiz::findOrFail($quizId); // Ensure the quiz exists
             $totalScore = 0; // Initialize total score
 
-            foreach ($validated['answers'] as $answerData) {
-                $question = Question::with('answers')->findOrFail($answerData['question_id']);
+            // Process answers if provided
+            if (!empty($validated['answers'])) {
+                foreach ($validated['answers'] as $answerData) {
+                    $question = Question::with('answers')->findOrFail($answerData['question_id']);
+                    $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
+                        ->where('QuestionID', $question->QuestionID)
+                        ->firstOrFail();
 
-                // Retrieve the selected answer
-                $selectedAnswer = Answer::where('AnswerText', $answerData['answer'])
-                    ->where('QuestionID', $question->QuestionID)
-                    ->firstOrFail();
+                    if ($selectedAnswer->IsCorrect) {
+                        $totalScore += $question->Marks;
+                    }
 
-                // Award marks if the answer is correct
-                if ($selectedAnswer->IsCorrect) {
-                    $totalScore += $question->Marks;
+                    StudentAnswer::create([
+                        'StudentId' => $studentId,
+                        'QuestionId' => $question->QuestionID,
+                        'SelectedAnswerId' => $selectedAnswer->AnswerID,
+                    ]);
                 }
-
-                // Store the student's answer
-                StudentAnswer::create([
-                    'StudentId' => $studentId,
-                    'QuestionId' => $question->QuestionID,
-                    'SelectedAnswerId' => $selectedAnswer->AnswerID,
-                ]);
             }
 
             // Calculate the total marks for the quiz
