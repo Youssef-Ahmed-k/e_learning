@@ -306,6 +306,7 @@ class StudentController extends Controller
             $scoreIncrement = $request->input('score_increment');
             $suspiciousBehaviors = $request->input('alerts', []);
             $imageB64 = $request->input('image_b64');
+            $answers = $request->input('answers', []);
 
             // Validate inputs
             if (!is_numeric($scoreIncrement) || $scoreIncrement < 0 || $scoreIncrement > 100) {
@@ -328,7 +329,6 @@ class StudentController extends Controller
             $newScore = min($cheatingScore->score + $scoreIncrement, 100);
             $cheatingScore->update(['score' => $newScore]);
 
-            // Handle image if provided
             // Handle image if provided
             $imagePath = null;
             if ($imageB64) {
@@ -369,11 +369,17 @@ class StudentController extends Controller
                 $message = "Cheating detected for student {$student->name} in quiz {$quiz->Title}.";
                 NotificationService::sendNotification($professor->id, $message);
 
+                // Trigger quiz submission with available answers
+                $request->merge(['answers' => $answers]);
+                $quizSubmissionController = new QuizSubmissionController();
+                $submissionResponse = $quizSubmissionController->submitQuiz($request, $quizId);
+
                 return response()->json([
                     'message' => 'Cheating score reached 100. Quiz submission triggered.',
                     'new_score' => $newScore,
                     'auto_submitted' => true,
-                    'image_path' => $imagePath
+                    'image_path' => $imagePath,
+                    'submission_response' => $submissionResponse->getData(true),
                 ]);
             }
 
