@@ -26,7 +26,9 @@ class StudentController extends Controller
     public function __construct()
     {
         $this->middleware('auth:api');
-        $this->middleware('role:user');
+        $this->middleware('role:user')->except([
+            'compareStudentAnswers'
+        ]);
     }
 
     // Allows a student to view the courses they are registered for
