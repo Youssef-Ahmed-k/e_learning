@@ -14,6 +14,8 @@ use App\Models\QuizResult;
 use App\Models\Quiz;
 use App\Models\User;
 use App\Models\CheatingScore;
+use App\Models\Question;
+use App\Models\StudentAnswer;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -502,6 +504,92 @@ class ProfessorController extends Controller
             return response()->json([
                 'message' => 'Something went wrong',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getStudentAnswers(Request $request, $quizId, $studentId)
+    {
+        try {
+            $perPage = $request->input('per_page', 5);
+            $page = $request->input('page', 1);
+
+            // Ensure quiz exists and belongs to professor's course
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->user()->id);
+                })
+                ->firstOrFail();
+
+            // Paginate questions
+            $questions = Question::where('QuizID', $quizId)
+                ->with('answers')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Fetch student answers for paginated questions
+            $studentAnswers = StudentAnswer::whereIn('QuestionID', $questions->pluck('QuestionID')->toArray())
+                ->where('StudentID', $studentId)
+                ->get()
+                ->keyBy('QuestionID');
+
+            // Prepare response
+            $questionsData = $questions->map(function ($question) use ($studentAnswers) {
+                $correctAnswer = $question->answers->firstWhere('IsCorrect', true);
+                $studentAnswer = $studentAnswers->get($question->QuestionID);
+
+                return [
+                    'question_id' => $question->QuestionID,
+                    'question_text' => $question->Content,
+                    'marks' => $question->Marks ?? 5,
+                    'image' => $question->Image ? Storage::disk('public')->url($question->Image) : null,
+                    'possible_answers' => $question->answers->pluck('AnswerText')->toArray(),
+                    'correct_answer' => $correctAnswer ? $correctAnswer->AnswerText : null,
+                    'answers' => $question->answers->map(function ($answer) use ($studentAnswer, $correctAnswer) {
+                        return [
+                            'answer_id' => $answer->AnswerID,
+                            'answer_text' => $answer->AnswerText,
+                            'is_correct' => $answer->AnswerID == ($correctAnswer ? $correctAnswer->AnswerID : null),
+                            'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID,
+                        ];
+                    }),
+                ];
+            })->values();
+
+            $studentAnswersData = $studentAnswers->map(function ($studentAnswer) {
+                $answer = $studentAnswer->answer; // Keep for compatibility
+                return [
+                    'question_id' => $studentAnswer->QuestionID,
+                    'selected_answer' => $answer ? $answer->AnswerText : null,
+                    'is_correct' => $answer ? $answer->IsCorrect : false,
+                ];
+            })->values();
+
+            return response()->json([
+                'status' => 200,
+                'quiz' => [
+                    'Title' => $quiz->Title,
+                    'Description' => $quiz->Description,
+                    'QuizDate' => $quiz->QuizDate,
+                    'Duration' => $quiz->Duration,
+                    'StartTime' => $quiz->StartTime,
+                    'EndTime' => $quiz->EndTime,
+                    'TotalMarks' => $questionsData->sum('marks'),
+                ],
+                'student_answers' => $studentAnswersData->toArray(),
+                'correct_answers' => $questionsData->toArray(),
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'total_pages' => $questions->lastPage(),
+                    'total_items' => $questions->total(),
+                    'per_page' => $questions->perPage(),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("Error fetching student answers for student_id: {$studentId}, quiz_id: {$quizId}, error: {$e->getMessage()}");
+            return response()->json([
+                'status' => 500,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
