@@ -121,4 +121,17 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function getUnreadNotificationCount()
+    {
+        try {
+            $user_id = auth()->user()->id;
+            $unreadCount = Notification::where('RecipientID', $user_id)
+                ->where('is_read', false)
+                ->count();
+            return response()->json(['unread_count' => $unreadCount]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Something went wrong', 'message' => $e->getMessage()], 500);
+        }
+    }
 }

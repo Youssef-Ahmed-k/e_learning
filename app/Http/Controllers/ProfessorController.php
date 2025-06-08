@@ -14,9 +14,12 @@ use App\Models\QuizResult;
 use App\Models\Quiz;
 use App\Models\User;
 use App\Models\CheatingScore;
+use App\Models\Question;
+use App\Models\StudentAnswer;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProfessorController extends Controller
 {
@@ -434,6 +437,158 @@ class ProfessorController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while retrieving cheating logs.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function resetCheatingScore(Request $request, $quizId, $studentId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Ensure quiz exists and belongs to the professor's course
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->user()->id);
+                })
+                ->firstOrFail();
+
+            // Ensure quiz result exists
+            $quizResult = QuizResult::where('QuizID', $quizId)
+                ->where('StudentID', $studentId)
+                ->firstOrFail();
+
+            // Update cheating score in QuizResult
+            $quizResult->update([
+                'CheatingScore' => 0,
+            ]);
+
+            // Update or create cheating score in CheatingScore table
+            $cheatingScore = CheatingScore::where('student_id', $studentId)
+                ->where('quiz_id', $quizId)
+                ->first();
+
+            if ($cheatingScore) {
+                $cheatingScore->update(['score' => 0]);
+            } else {
+                CheatingScore::create([
+                    'student_id' => $studentId,
+                    'quiz_id' => $quizId,
+                    'score' => 0,
+                ]);
+                Log::info("Created new CheatingScore record for student_id: {$studentId}, quiz_id: {$quizId}");
+            }
+
+            DB::commit();
+
+            // Notify student
+            $message = "Your result for quiz {$quiz->Title} has been updated by the professor.";
+            NotificationService::sendNotification($studentId, $message);
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Cheating score reset successfully',
+                'quiz_result' => [
+                    'quiz_id' => $quizId,
+                    'student_id' => $studentId,
+                    'score' => $quizResult->Score,
+                    'percentage' => $quizResult->Percentage,
+                    'passed' => $quizResult->Passed,
+                    'cheating_score' => 0,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error resetting cheating score for student_id: {$studentId}, quiz_id: {$quizId}, error: {$e->getMessage()}");
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getStudentAnswers(Request $request, $quizId, $studentId)
+    {
+        try {
+            $perPage = $request->input('per_page', 5);
+            $page = $request->input('page', 1);
+
+            // Ensure quiz exists and belongs to professor's course
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->user()->id);
+                })
+                ->firstOrFail();
+
+            // Paginate questions
+            $questions = Question::where('QuizID', $quizId)
+                ->with('answers')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Fetch student answers for paginated questions
+            $studentAnswers = StudentAnswer::whereIn('QuestionID', $questions->pluck('QuestionID')->toArray())
+                ->where('StudentID', $studentId)
+                ->get()
+                ->keyBy('QuestionID');
+
+            // Prepare response
+            $questionsData = $questions->map(function ($question) use ($studentAnswers) {
+                $correctAnswer = $question->answers->firstWhere('IsCorrect', true);
+                $studentAnswer = $studentAnswers->get($question->QuestionID);
+
+                return [
+                    'question_id' => $question->QuestionID,
+                    'question_text' => $question->Content,
+                    'marks' => $question->Marks ?? 5,
+                    'image' => $question->Image ? Storage::disk('public')->url($question->Image) : null,
+                    'possible_answers' => $question->answers->pluck('AnswerText')->toArray(),
+                    'correct_answer' => $correctAnswer ? $correctAnswer->AnswerText : null,
+                    'answers' => $question->answers->map(function ($answer) use ($studentAnswer, $correctAnswer) {
+                        return [
+                            'answer_id' => $answer->AnswerID,
+                            'answer_text' => $answer->AnswerText,
+                            'is_correct' => $answer->AnswerID == ($correctAnswer ? $correctAnswer->AnswerID : null),
+                            'is_student_choice' => optional($studentAnswer)->SelectedAnswerID == $answer->AnswerID,
+                        ];
+                    }),
+                ];
+            })->values();
+
+            $studentAnswersData = $studentAnswers->map(function ($studentAnswer) {
+                $answer = $studentAnswer->answer; // Keep for compatibility
+                return [
+                    'question_id' => $studentAnswer->QuestionID,
+                    'selected_answer' => $answer ? $answer->AnswerText : null,
+                    'is_correct' => $answer ? $answer->IsCorrect : false,
+                ];
+            })->values();
+
+            return response()->json([
+                'status' => 200,
+                'quiz' => [
+                    'Title' => $quiz->Title,
+                    'Description' => $quiz->Description,
+                    'QuizDate' => $quiz->QuizDate,
+                    'Duration' => $quiz->Duration,
+                    'StartTime' => $quiz->StartTime,
+                    'EndTime' => $quiz->EndTime,
+                    'TotalMarks' => $questionsData->sum('marks'),
+                ],
+                'student_answers' => $studentAnswersData->toArray(),
+                'correct_answers' => $questionsData->toArray(),
+                'pagination' => [
+                    'current_page' => $questions->currentPage(),
+                    'total_pages' => $questions->lastPage(),
+                    'total_items' => $questions->total(),
+                    'per_page' => $questions->perPage(),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("Error fetching student answers for student_id: {$studentId}, quiz_id: {$quizId}, error: {$e->getMessage()}");
+            return response()->json([
+                'status' => 500,
+                'message' => 'Something went wrong',
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -115,6 +115,8 @@ Route::group([
     Route::get('materials/{courseID}', [ProfessorController::class, 'getCourseMaterials']);
     Route::get('quizzes/{quizId}/cheaters', [ProfessorController::class, 'getHighCheatingScores']);
     Route::get('/quizzes/{quizId}/{studentId}/cheating-logs', [ProfessorController::class, 'getCheatingLogs']);
+    Route::post('/quizzes/{quizId}/results/{studentId}/edit', [ProfessorController::class, 'resetCheatingScore']);
+    Route::get('/quizzes/{quizId}/results/{studentId}', [ProfessorController::class, 'getStudentAnswers']);
 });
 
 // Quiz Routes
@@ -166,4 +168,5 @@ Route::group([
     Route::post('read-all', [NotificationController::class, 'markAllAsRead']);
     Route::delete('{id}', [NotificationController::class, 'deleteNotification']);
     Route::delete('', [NotificationController::class, 'deleteAllNotifications']);
+    Route::get('unread-count', [NotificationController::class, 'getUnreadNotificationCount']);
 });
