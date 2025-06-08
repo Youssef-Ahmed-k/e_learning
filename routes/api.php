@@ -116,6 +116,7 @@ Route::group([
     Route::get('quizzes/{quizId}/cheaters', [ProfessorController::class, 'getHighCheatingScores']);
     Route::get('/quizzes/{quizId}/{studentId}/cheating-logs', [ProfessorController::class, 'getCheatingLogs']);
     Route::post('/quizzes/{quizId}/results/{studentId}/edit', [ProfessorController::class, 'resetCheatingScore']);
+    Route::get('/quizzes/{quizId}/results/{studentId}', [ProfessorController::class, 'getStudentAnswers']);
 });
 
 // Quiz Routes
