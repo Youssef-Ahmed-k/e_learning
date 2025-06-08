@@ -17,6 +17,7 @@ use App\Models\CheatingScore;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProfessorController extends Controller
 {
@@ -435,6 +436,72 @@ class ProfessorController extends Controller
             return response()->json([
                 'message' => 'An error occurred while retrieving cheating logs.',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function resetCheatingScore(Request $request, $quizId, $studentId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Ensure quiz exists and belongs to the professor's course
+            $quiz = Quiz::where('QuizID', $quizId)
+                ->whereHas('course', function ($query) {
+                    $query->where('ProfessorID', auth()->user()->id);
+                })
+                ->firstOrFail();
+
+            // Ensure quiz result exists
+            $quizResult = QuizResult::where('QuizID', $quizId)
+                ->where('StudentID', $studentId)
+                ->firstOrFail();
+
+            // Update cheating score in QuizResult
+            $quizResult->update([
+                'CheatingScore' => 0,
+            ]);
+
+            // Update or create cheating score in CheatingScore table
+            $cheatingScore = CheatingScore::where('student_id', $studentId)
+                ->where('quiz_id', $quizId)
+                ->first();
+
+            if ($cheatingScore) {
+                $cheatingScore->update(['score' => 0]);
+            } else {
+                CheatingScore::create([
+                    'student_id' => $studentId,
+                    'quiz_id' => $quizId,
+                    'score' => 0,
+                ]);
+                Log::info("Created new CheatingScore record for student_id: {$studentId}, quiz_id: {$quizId}");
+            }
+
+            DB::commit();
+
+            // Notify student
+            $message = "Your result for quiz {$quiz->Title} has been updated by the professor.";
+            NotificationService::sendNotification($studentId, $message);
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Cheating score reset successfully',
+                'quiz_result' => [
+                    'quiz_id' => $quizId,
+                    'student_id' => $studentId,
+                    'score' => $quizResult->Score,
+                    'percentage' => $quizResult->Percentage,
+                    'passed' => $quizResult->Passed,
+                    'cheating_score' => 0,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error resetting cheating score for student_id: {$studentId}, quiz_id: {$quizId}, error: {$e->getMessage()}");
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
