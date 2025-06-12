@@ -75,11 +75,20 @@ class QuizResultController extends Controller
                 ->first();
 
             if ($cheatingScore && $cheatingScore->score == 100) {
+                // Get the quiz
+                $quiz = Quiz::with('course')->find($quizId);
+                $professorEmail = null;
+                if ($quiz && $quiz->course) {
+                    $professor = User::find($quiz->course->ProfessorID);
+                    $professorEmail = $professor ? $professor->email : null;
+                }
+
                 return response()->json([
                     'message' => 'You have been flagged for cheating in this quiz. Please contact your professor.',
                     'score' => 0,
                     'percentage' => 0,
                     'passed' => false,
+                    'professor_email' => $professorEmail,
                     'cheating_score' => $cheatingScore->score,
                 ], 200);
             }
