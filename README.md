@@ -1,7 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="220" alt="Laravel Logo">
-  <img src="https://img.icons8.com/color/96/000000/mysql-logo.png" width="60" alt="MySQL Logo" style="margin-left: 20px;">
-  <img src="https://img.icons8.com/color/96/000000/php.png" width="60" alt="PHP Logo" style="margin-left: 20px;">
+  <!-- Laravel modern logo -->
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-original-wordmark.svg" width="120" alt="Laravel Logo" style="margin-right: 30px;">
+  <!-- MySQL modern logo -->
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original-wordmark.svg" width="100" alt="MySQL Logo" style="margin-right: 30px;">
+  <!-- PHP modern logo -->
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" width="100" alt="PHP Logo">
 </p>
 
 <h1 align="center">EduGuard Backend</h1>
@@ -157,7 +160,7 @@ This project is open-sourced under the [MIT license](https://opensource.org/lice
 ---
 
 <p align="center">
-  <img src="https://img.icons8.com/color/96/000000/laravel.png" width="60" alt="Laravel Logo">
-  <img src="https://img.icons8.com/color/96/000000/mysql-logo.png" width="60" alt="MySQL Logo">
-  <img src="https://img.icons8.com/color/96/000000/php.png" width="60" alt="PHP Logo">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-original.svg" width="60" alt="Laravel Logo">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg" width="60" alt="MySQL Logo">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" width="60" alt="PHP Logo">
 </p>
